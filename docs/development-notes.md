@@ -29,6 +29,7 @@ This file tracks the practical work being done in the repo so the project has a 
 - If neither exists, it downloads portable Node.js LTS into `.runtime/`.
 - It installs dependencies when `node_modules/` is missing.
 - It checks for `node_modules/electron/dist/electron.exe` and repairs dependencies if Electron is incomplete.
+- Electron repair clears common skip-download flags, runs `npm rebuild electron`, and can run Electron's installer script directly.
 
 ## Packaging Direction
 

@@ -101,20 +101,33 @@ function Install-PortableNode {
 }
 
 function Clear-NpmInstallBlockers {
-  foreach ($name in @("ELECTRON_SKIP_BINARY_DOWNLOAD", "npm_config_ignore_scripts")) {
+  foreach ($name in @(
+    "ELECTRON_SKIP_BINARY_DOWNLOAD",
+    "electron_skip_binary_download",
+    "npm_config_electron_skip_binary_download",
+    "npm_config_ELECTRON_SKIP_BINARY_DOWNLOAD",
+    "NPM_CONFIG_IGNORE_SCRIPTS",
+    "npm_config_ignore_scripts"
+  )) {
     if (Test-Path -LiteralPath "Env:\$name") {
       Remove-Item -LiteralPath "Env:\$name" -ErrorAction SilentlyContinue
     }
   }
 
   $env:npm_config_ignore_scripts = "false"
+  $env:npm_config_electron_skip_binary_download = "false"
+  $env:ELECTRON_SKIP_BINARY_DOWNLOAD = "0"
 }
 
-function Test-ElectronInstall {
-  $electronDirs = @(
+function Get-ElectronPackageDirs {
+  return @(
     (Join-Path $repoRoot "node_modules\electron"),
     (Join-Path $repoRoot "apps\desktop\node_modules\electron")
   )
+}
+
+function Test-ElectronInstall {
+  $electronDirs = Get-ElectronPackageDirs
 
   foreach ($electronDir in $electronDirs) {
     $electronExe = Join-Path $electronDir "dist\electron.exe"
@@ -126,10 +139,18 @@ function Test-ElectronInstall {
   return $false
 }
 
+function Test-ElectronPackagePresent {
+  foreach ($electronDir in Get-ElectronPackageDirs) {
+    if (Test-Path -LiteralPath (Join-Path $electronDir "install.js")) {
+      return $true
+    }
+  }
+
+  return $false
+}
+
 function Remove-BrokenElectronInstall {
   $paths = @(
-    (Join-Path $repoRoot "node_modules\electron"),
-    (Join-Path $repoRoot "apps\desktop\node_modules\electron"),
     (Join-Path $repoRoot "node_modules\.bin\electron"),
     (Join-Path $repoRoot "node_modules\.bin\electron.cmd"),
     (Join-Path $repoRoot "node_modules\.bin\electron.ps1")
@@ -150,12 +171,44 @@ function Install-AppDependencies {
 
   Clear-NpmInstallBlockers
   Write-Host $Reason -ForegroundColor Yellow
-  & $npm install
+  & $npm install --ignore-scripts=false --foreground-scripts
   if ($LASTEXITCODE -ne 0) {
     Write-Host "Dependency install failed." -ForegroundColor Red
     exit $LASTEXITCODE
   }
   Write-Host ""
+}
+
+function Repair-ElectronInstall {
+  Clear-NpmInstallBlockers
+  Remove-BrokenElectronInstall
+
+  Write-Host "Running npm rebuild for Electron..." -ForegroundColor Yellow
+  & $npm rebuild electron --ignore-scripts=false --foreground-scripts
+  if ($LASTEXITCODE -ne 0 -or -not (Test-ElectronPackagePresent)) {
+    Write-Host "Electron rebuild did not restore the package; retrying npm install..." -ForegroundColor Yellow
+    & $npm install --ignore-scripts=false --foreground-scripts
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "Dependency install failed." -ForegroundColor Red
+      exit $LASTEXITCODE
+    }
+  }
+
+  if (Test-ElectronInstall) {
+    return
+  }
+
+  foreach ($electronDir in Get-ElectronPackageDirs) {
+    $installer = Join-Path $electronDir "install.js"
+    if (Test-Path -LiteralPath $installer) {
+      Write-Host "Running Electron binary installer directly..." -ForegroundColor Yellow
+      & $node $installer
+      if ($LASTEXITCODE -ne 0) {
+        Write-Host "Electron binary installer failed." -ForegroundColor Red
+        exit $LASTEXITCODE
+      }
+    }
+  }
 }
 
 Write-Host ""
@@ -203,13 +256,13 @@ if (-not (Test-Path -LiteralPath (Join-Path $repoRoot "node_modules"))) {
 if (-not (Test-ElectronInstall)) {
   Write-Host "Electron is installed incompletely or its executable is missing." -ForegroundColor Yellow
   Write-Host "Repairing Electron dependency..."
-  Remove-BrokenElectronInstall
-  Install-AppDependencies -Reason "Reinstalling app dependencies with Electron enabled..."
+  Repair-ElectronInstall
 }
 
 if (-not (Test-ElectronInstall)) {
   Write-Host "Electron still did not install correctly." -ForegroundColor Red
-  Write-Host "Try deleting node_modules in this project folder and launching again."
+  Write-Host "This usually means the Electron binary download was blocked or skipped."
+  Write-Host "Try deleting node_modules in this project folder and launching again, or use the portable packaged app artifact from GitHub Actions."
   exit 1
 }
 

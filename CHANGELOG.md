@@ -10,6 +10,7 @@
 - Added `Launch-WaveGen3D.bat` and Windows launcher scripts for double-click startup.
 - Improved the launcher to download portable Node.js when Node is missing.
 - Improved the launcher to detect and repair incomplete Electron installs.
+- Improved Electron repair to run npm lifecycle scripts and Electron's binary installer directly when needed.
 - Added CI for core tests, exporter tests, desktop build, Docker exporter build, and portable Windows bundle creation.
 - Added the V2 app scaffold: Electron, React, Three.js viewport, shared geometry core, Python exporter, docs, and sample project file.
 - Replaced the v1 2D surface prototype files with the new 3D cabinet-shell architecture.
