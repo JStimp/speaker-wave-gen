@@ -34,13 +34,17 @@ Launch-WaveGen3D.bat
 
 The launcher checks for Node.js/npm, installs app dependencies on the first run, then opens the Electron desktop app. Leave the launcher window open while the app is running.
 
+If Node.js is not installed, the launcher downloads a portable Node.js LTS runtime into `.runtime/` automatically. The first run needs internet access. Later launches reuse `.runtime/` and `node_modules/` from the project folder.
+
 Manual PowerShell launch:
 
 ```powershell
 .\Launch-WaveGen3D.bat
 ```
 
-If Node.js is missing, install the current LTS version from <https://nodejs.org> and run the launcher again.
+If the automatic portable runtime download fails, install the current LTS version from <https://nodejs.org> and run the launcher again.
+
+Docker is used for the Linux CAD exporter, not for the regular desktop GUI. Running the GUI inside Docker on Windows adds display-driver and file-sharing friction, while a local Electron app behaves like a normal desktop program.
 
 ### Developer launch
 
