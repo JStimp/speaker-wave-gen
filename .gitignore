@@ -1,6 +1,8 @@
 node_modules/
 .runtime/
+.wavegen3d-user-data/
 dist/
+dist-packaged/
 out/
 coverage/
 .vite/

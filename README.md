@@ -22,11 +22,39 @@ scripts             Helper scripts for Docker/WSL exporter runs
 docs                Architecture and CAD export notes
 ```
 
+Project tracking docs:
+
+- [Changelog](CHANGELOG.md)
+- [Development notes](docs/development-notes.md)
+
 ## Quick start
 
-### Best Windows option: portable bundle
+### Best Windows option: portable app
 
-For a PC that should launch without installing Node.js, use the portable Windows bundle from GitHub Actions:
+For testing and normal use, prefer the portable Windows app. It is not an installer, so there is nothing to uninstall. Delete the app folder to remove that version.
+
+1. Open the GitHub repo.
+2. Go to **Actions**.
+3. Run **Windows Packaged App** on the `experimental` branch.
+4. Download the `WaveGen3D-windows-portable-exe` artifact.
+5. Run the downloaded WaveGen3D portable executable.
+
+Node.js is required to build the app, but it is bundled inside the packaged Electron app. The target PC should not need Node/npm installed.
+
+Portable behavior:
+
+- no system Node.js install required
+- no npm install on the target PC
+- no Windows installer or uninstall step
+- app data/cache stored beside the app in `WaveGen3D-user-data/`
+- switching versions means replacing the folder or executable
+- deleting the folder removes the app and its local test data
+
+An installer can be added later when the app is stable, but it is not the recommended testing workflow.
+
+### Source portable bundle
+
+For a source-style folder that includes portable Node.js and `node_modules`, use the portable Windows bundle from GitHub Actions:
 
 1. Open the GitHub repo.
 2. Go to **Actions**.
@@ -34,7 +62,7 @@ For a PC that should launch without installing Node.js, use the portable Windows
 4. Download the `WaveGen3D-windows-portable` artifact.
 5. Unzip it and double-click `Launch-WaveGen3D.bat`.
 
-That zip includes portable Node.js and installed app dependencies. It is the right package to copy to multiple Windows devices.
+That zip includes portable Node.js and installed app dependencies. It is useful for debugging or development-style launches, but the portable app above is the cleaner end-user option.
 
 To build the portable bundle yourself on a Windows machine with internet:
 

@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron .\"",
     "build": "vite build",
+    "package:win": "npm run build && electron-builder --win portable --x64",
     "start": "electron ."
   },
   "dependencies": {
@@ -19,8 +20,45 @@
     "vite": "^5.4.0",
     "wait-on": "^7.2.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "electron-builder": "^24.13.3"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "build": {
+    "appId": "com.jstimp.wavegen3d",
+    "productName": "WaveGen3D",
+    "asar": true,
+    "directories": {
+      "output": "dist-packaged"
+    },
+    "files": [
+      "dist/renderer/**/*",
+      "src/main/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../../scripts",
+        "to": "scripts"
+      },
+      {
+        "from": "../../exporter",
+        "to": "exporter"
+      },
+      {
+        "from": "../../examples",
+        "to": "examples"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  }
 }
-

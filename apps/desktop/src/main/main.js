@@ -10,6 +10,8 @@ const isDev = Boolean(process.env.VITE_DEV_SERVER_URL) || !app.isPackaged;
 
 let mainWindow;
 
+configurePortableUserData();
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1440,
@@ -48,6 +50,15 @@ app.on("window-all-closed", () => {
     app.quit();
   }
 });
+
+function configurePortableUserData() {
+  const userDataPath = app.isPackaged
+    ? path.join(path.dirname(process.execPath), "WaveGen3D-user-data")
+    : path.resolve(__dirname, "../../../..", ".wavegen3d-user-data");
+
+  app.setPath("userData", userDataPath);
+  app.setPath("sessionData", path.join(userDataPath, "session"));
+}
 
 function registerIpc() {
   ipcMain.handle("project:open", async () => {
@@ -119,7 +130,7 @@ function runExporter(configPath, outDir) {
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        path.resolve(app.getAppPath(), "../../scripts/run-exporter-wsl.ps1"),
+        resolveResourcePath("scripts/run-exporter-wsl.ps1"),
         "-Config",
         configPath,
         "-Out",
@@ -166,3 +177,10 @@ function runExporter(configPath, outDir) {
   });
 }
 
+function resolveResourcePath(relativePath) {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, relativePath);
+  }
+
+  return path.resolve(app.getAppPath(), "../..", relativePath);
+}

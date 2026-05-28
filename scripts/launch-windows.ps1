@@ -100,6 +100,64 @@ function Install-PortableNode {
   }
 }
 
+function Clear-NpmInstallBlockers {
+  foreach ($name in @("ELECTRON_SKIP_BINARY_DOWNLOAD", "npm_config_ignore_scripts")) {
+    if (Test-Path -LiteralPath "Env:\$name") {
+      Remove-Item -LiteralPath "Env:\$name" -ErrorAction SilentlyContinue
+    }
+  }
+
+  $env:npm_config_ignore_scripts = "false"
+}
+
+function Test-ElectronInstall {
+  $electronDirs = @(
+    (Join-Path $repoRoot "node_modules\electron"),
+    (Join-Path $repoRoot "apps\desktop\node_modules\electron")
+  )
+
+  foreach ($electronDir in $electronDirs) {
+    $electronExe = Join-Path $electronDir "dist\electron.exe"
+    if (Test-Path -LiteralPath $electronExe) {
+      return $true
+    }
+  }
+
+  return $false
+}
+
+function Remove-BrokenElectronInstall {
+  $paths = @(
+    (Join-Path $repoRoot "node_modules\electron"),
+    (Join-Path $repoRoot "apps\desktop\node_modules\electron"),
+    (Join-Path $repoRoot "node_modules\.bin\electron"),
+    (Join-Path $repoRoot "node_modules\.bin\electron.cmd"),
+    (Join-Path $repoRoot "node_modules\.bin\electron.ps1")
+  )
+
+  foreach ($path in $paths) {
+    if (Test-Path -LiteralPath $path) {
+      Remove-Item -LiteralPath $path -Recurse -Force
+    }
+  }
+}
+
+function Install-AppDependencies {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$Reason
+  )
+
+  Clear-NpmInstallBlockers
+  Write-Host $Reason -ForegroundColor Yellow
+  & $npm install
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host "Dependency install failed." -ForegroundColor Red
+    exit $LASTEXITCODE
+  }
+  Write-Host ""
+}
+
 Write-Host ""
 Write-Host "WaveGen3D Launcher" -ForegroundColor Cyan
 Write-Host "Project: $repoRoot"
@@ -139,13 +197,20 @@ Write-Host "npm:  $npmVersion"
 Write-Host ""
 
 if (-not (Test-Path -LiteralPath (Join-Path $repoRoot "node_modules"))) {
-  Write-Host "Installing app dependencies. This can take a few minutes the first time..." -ForegroundColor Yellow
-  & $npm install
-  if ($LASTEXITCODE -ne 0) {
-    Write-Host "Dependency install failed." -ForegroundColor Red
-    exit $LASTEXITCODE
-  }
-  Write-Host ""
+  Install-AppDependencies -Reason "Installing app dependencies. This can take a few minutes the first time..."
+}
+
+if (-not (Test-ElectronInstall)) {
+  Write-Host "Electron is installed incompletely or its executable is missing." -ForegroundColor Yellow
+  Write-Host "Repairing Electron dependency..."
+  Remove-BrokenElectronInstall
+  Install-AppDependencies -Reason "Reinstalling app dependencies with Electron enabled..."
+}
+
+if (-not (Test-ElectronInstall)) {
+  Write-Host "Electron still did not install correctly." -ForegroundColor Red
+  Write-Host "Try deleting node_modules in this project folder and launching again."
+  exit 1
 }
 
 Write-Host "Starting WaveGen3D desktop app..." -ForegroundColor Green
