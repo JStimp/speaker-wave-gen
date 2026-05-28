@@ -24,7 +24,31 @@ docs                Architecture and CAD export notes
 
 ## Quick start
 
-### Windows desktop launch
+### Best Windows option: portable bundle
+
+For a PC that should launch without installing Node.js, use the portable Windows bundle from GitHub Actions:
+
+1. Open the GitHub repo.
+2. Go to **Actions**.
+3. Run **Windows Portable Bundle** on the `experimental` branch.
+4. Download the `WaveGen3D-windows-portable` artifact.
+5. Unzip it and double-click `Launch-WaveGen3D.bat`.
+
+That zip includes portable Node.js and installed app dependencies. It is the right package to copy to multiple Windows devices.
+
+To build the portable bundle yourself on a Windows machine with internet:
+
+```powershell
+.\scripts\build-portable-windows.ps1
+```
+
+Output:
+
+```text
+dist\WaveGen3D-windows-portable.zip
+```
+
+### Source-code launch
 
 After cloning the repo, double-click:
 
@@ -32,7 +56,7 @@ After cloning the repo, double-click:
 Launch-WaveGen3D.bat
 ```
 
-The launcher checks for Node.js/npm, installs app dependencies on the first run, then opens the Electron desktop app. Leave the launcher window open while the app is running.
+The source-code launcher checks for Node.js/npm, installs app dependencies on the first run, then opens the Electron desktop app. Leave the launcher window open while the app is running.
 
 If Node.js is not installed, the launcher downloads a portable Node.js LTS runtime into `.runtime/` automatically. The first run needs internet access. Later launches reuse `.runtime/` and `node_modules/` from the project folder.
 

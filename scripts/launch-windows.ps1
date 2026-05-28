@@ -23,23 +23,35 @@ function Find-Command {
 }
 
 function Get-PortableNodeBin {
-  if (-not (Test-Path -LiteralPath $portableNodeMarker)) {
-    return $null
+  $candidateDirs = @()
+
+  if (Test-Path -LiteralPath $portableNodeMarker) {
+    $markerValue = (Get-Content -LiteralPath $portableNodeMarker -Raw).Trim()
+    if ($markerValue) {
+      if ([System.IO.Path]::IsPathRooted($markerValue)) {
+        $candidateDirs += $markerValue
+      } else {
+        $candidateDirs += (Join-Path $runtimeRoot $markerValue)
+      }
+    }
   }
 
-  $nodeDir = (Get-Content -LiteralPath $portableNodeMarker -Raw).Trim()
-  if (-not $nodeDir) {
-    return $null
+  if (Test-Path -LiteralPath $runtimeRoot) {
+    $candidateDirs += Get-ChildItem -LiteralPath $runtimeRoot -Directory -Filter "node-*-win-*" |
+      Select-Object -ExpandProperty FullName
   }
 
-  $nodeExe = Join-Path $nodeDir "node.exe"
-  $npmCmd = Join-Path $nodeDir "npm.cmd"
+  foreach ($nodeDir in $candidateDirs) {
+    $nodeExe = Join-Path $nodeDir "node.exe"
+    $npmCmd = Join-Path $nodeDir "npm.cmd"
 
-  if ((Test-Path -LiteralPath $nodeExe) -and (Test-Path -LiteralPath $npmCmd)) {
-    return @{
-      Node = $nodeExe
-      Npm = $npmCmd
-      Bin = $nodeDir
+    if ((Test-Path -LiteralPath $nodeExe) -and (Test-Path -LiteralPath $npmCmd)) {
+      Set-Content -LiteralPath $portableNodeMarker -Value (Split-Path -Leaf $nodeDir) -Encoding UTF8
+      return @{
+        Node = $nodeExe
+        Npm = $npmCmd
+        Bin = $nodeDir
+      }
     }
   }
 
@@ -79,7 +91,7 @@ function Install-PortableNode {
     throw "Portable Node.js extraction did not produce node.exe."
   }
 
-  Set-Content -LiteralPath $portableNodeMarker -Value $nodeDir -Encoding UTF8
+  Set-Content -LiteralPath $portableNodeMarker -Value (Split-Path -Leaf $nodeDir) -Encoding UTF8
 
   return @{
     Node = Join-Path $nodeDir "node.exe"
