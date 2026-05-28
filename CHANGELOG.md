@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Changed source-code launch to browser UI mode by default, avoiding Electron binary installs during normal testing.
+- Moved Electron, Electron Builder, and Electron dev helpers into optional dependencies so normal source installs use a smaller dependency set.
+- Updated portable source bundle creation to omit optional Electron packaging dependencies.
+- Changed Windows packaging workflows to manual-only so failed experimental package builds do not spam GitHub notifications on every push.
 - Added Windows packaged-app build support through `electron-builder` so end users can run a portable executable without installing Node.js.
 - Added a GitHub Actions workflow that uploads a packaged Windows portable executable.
 - Updated packaged-app resource resolution so exporter scripts can be found from an Electron build.

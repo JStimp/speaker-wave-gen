@@ -8,6 +8,7 @@ $ProgressPreference = "SilentlyContinue"
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $repoRoot
+$preferredNodeMajor = 20
 
 function Assert-ChildPath {
   param(
@@ -33,9 +34,9 @@ function Assert-ChildPath {
 function Get-LatestNodeLts {
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
   $index = Invoke-RestMethod -Uri "https://nodejs.org/dist/index.json"
-  $release = $index | Where-Object { $_.lts -ne $false } | Select-Object -First 1
+  $release = $index | Where-Object { $_.version -like "v$preferredNodeMajor.*" } | Select-Object -First 1
   if (-not $release) {
-    throw "Could not find a Node.js LTS release from nodejs.org."
+    throw "Could not find a Node.js $preferredNodeMajor release from nodejs.org."
   }
   return $release.version
 }
@@ -116,7 +117,7 @@ $env:Path = "$($runtime.Bin);$env:Path"
 Write-Host "Installing app dependencies into portable bundle..."
 Push-Location $bundleRoot
 try {
-  & $runtime.Npm install
+  & $runtime.Npm install --omit=optional --package-lock=false --audit=false --fund=false
   if ($LASTEXITCODE -ne 0) {
     throw "npm install failed with exit code $LASTEXITCODE"
   }

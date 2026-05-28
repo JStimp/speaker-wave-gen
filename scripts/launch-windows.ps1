@@ -121,14 +121,7 @@ function Install-PortableNode {
 }
 
 function Clear-NpmInstallBlockers {
-  foreach ($name in @(
-    "ELECTRON_SKIP_BINARY_DOWNLOAD",
-    "electron_skip_binary_download",
-    "npm_config_electron_skip_binary_download",
-    "npm_config_ELECTRON_SKIP_BINARY_DOWNLOAD",
-    "NPM_CONFIG_IGNORE_SCRIPTS",
-    "npm_config_ignore_scripts"
-  )) {
+  foreach ($name in @("NPM_CONFIG_IGNORE_SCRIPTS", "npm_config_ignore_scripts")) {
     if (Test-Path -LiteralPath "Env:\$name") {
       Remove-Item -LiteralPath "Env:\$name" -ErrorAction SilentlyContinue
     }
@@ -142,50 +135,6 @@ function Clear-NpmInstallBlockers {
   New-Item -ItemType Directory -Force -Path $env:ELECTRON_CACHE | Out-Null
 }
 
-function Get-ElectronPackageDirs {
-  return @(
-    (Join-Path $repoRoot "node_modules\electron"),
-    (Join-Path $repoRoot "apps\desktop\node_modules\electron")
-  )
-}
-
-function Test-ElectronInstall {
-  $electronDirs = Get-ElectronPackageDirs
-
-  foreach ($electronDir in $electronDirs) {
-    $electronExe = Join-Path $electronDir "dist\electron.exe"
-    if (Test-Path -LiteralPath $electronExe) {
-      return $true
-    }
-  }
-
-  return $false
-}
-
-function Test-ElectronPackagePresent {
-  foreach ($electronDir in Get-ElectronPackageDirs) {
-    if (Test-Path -LiteralPath (Join-Path $electronDir "install.js")) {
-      return $true
-    }
-  }
-
-  return $false
-}
-
-function Remove-BrokenElectronInstall {
-  $paths = @(
-    (Join-Path $repoRoot "node_modules\.bin\electron"),
-    (Join-Path $repoRoot "node_modules\.bin\electron.cmd"),
-    (Join-Path $repoRoot "node_modules\.bin\electron.ps1")
-  )
-
-  foreach ($path in $paths) {
-    if (Test-Path -LiteralPath $path) {
-      Remove-Item -LiteralPath $path -Recurse -Force
-    }
-  }
-}
-
 function Install-AppDependencies {
   param(
     [Parameter(Mandatory = $true)]
@@ -194,7 +143,7 @@ function Install-AppDependencies {
 
   Clear-NpmInstallBlockers
   Write-Host $Reason -ForegroundColor Yellow
-  & $npm install --ignore-scripts=false --foreground-scripts --package-lock=false --audit=false --fund=false
+  & $npm install --omit=optional --ignore-scripts=false --package-lock=false --audit=false --fund=false
   if ($LASTEXITCODE -ne 0) {
     Write-Host "Dependency install failed." -ForegroundColor Red
     exit $LASTEXITCODE
@@ -202,41 +151,9 @@ function Install-AppDependencies {
   Write-Host ""
 }
 
-function Repair-ElectronInstall {
-  Clear-NpmInstallBlockers
-  Remove-BrokenElectronInstall
-
-  Write-Host "Running npm rebuild for Electron..." -ForegroundColor Yellow
-  & $npm rebuild electron --ignore-scripts=false --foreground-scripts
-  if ($LASTEXITCODE -ne 0 -or -not (Test-ElectronPackagePresent)) {
-    Write-Host "Electron rebuild did not restore the package; retrying npm install..." -ForegroundColor Yellow
-    & $npm install --ignore-scripts=false --foreground-scripts --package-lock=false --audit=false --fund=false
-    if ($LASTEXITCODE -ne 0) {
-      Write-Host "Dependency install failed." -ForegroundColor Red
-      exit $LASTEXITCODE
-    }
-  }
-
-  if (Test-ElectronInstall) {
-    return
-  }
-
-  foreach ($electronDir in Get-ElectronPackageDirs) {
-    $installer = Join-Path $electronDir "install.js"
-    if (Test-Path -LiteralPath $installer) {
-      Write-Host "Running Electron binary installer directly..." -ForegroundColor Yellow
-      & $node $installer
-      if ($LASTEXITCODE -ne 0) {
-        Write-Host "Electron binary installer failed." -ForegroundColor Red
-        exit $LASTEXITCODE
-      }
-    }
-  }
-}
-
 function Start-BrowserPreview {
-  Write-Host "Starting browser preview mode instead." -ForegroundColor Yellow
-  Write-Host "This runs the same React/Three.js UI in your browser without Electron file dialogs."
+  Write-Host "Starting WaveGen3D browser UI..." -ForegroundColor Green
+  Write-Host "This is the stable source-code test mode. It avoids Electron binary downloads."
   Write-Host "Leave this window open while the preview is running."
   Write-Host ""
   & $npm run web
@@ -306,25 +223,7 @@ Write-Host "npm:  $npmVersion"
 Write-Host ""
 
 if (-not (Test-Path -LiteralPath (Join-Path $repoRoot "node_modules"))) {
-  Install-AppDependencies -Reason "Installing app dependencies. This can take a few minutes the first time..."
+  Install-AppDependencies -Reason "Installing browser UI dependencies. This can take a few minutes the first time..."
 }
 
-if (-not (Test-ElectronInstall)) {
-  Write-Host "Electron is installed incompletely or its executable is missing." -ForegroundColor Yellow
-  Write-Host "Repairing Electron dependency..."
-  Repair-ElectronInstall
-}
-
-if (-not (Test-ElectronInstall)) {
-  Write-Host "Electron still did not install correctly." -ForegroundColor Red
-  Write-Host "This usually means the Electron binary download was blocked or skipped."
-  Write-Host "The most stable app path is the portable packaged app artifact from GitHub Actions."
-  Start-BrowserPreview
-}
-
-Write-Host "Starting WaveGen3D desktop app..." -ForegroundColor Green
-Write-Host "Leave this window open while the app is running."
-Write-Host ""
-
-& $npm run dev
-exit $LASTEXITCODE
+Start-BrowserPreview

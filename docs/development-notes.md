@@ -9,6 +9,7 @@ This file tracks the practical work being done in the repo so the project has a 
 - Keep the Windows GUI independent of OpenCascade/OCP because the v1 handoff identified native CAD DLL blocking on Windows.
 - Use Docker/WSL Linux for STEP export and keep STL/OBJ as preview or fallback formats.
 - Prefer a portable Windows Electron executable for end users and testing; use the source launcher only for development or debugging.
+- Source-code launch should use the browser UI by default to avoid Electron binary install failures on developer/test machines.
 
 ## Implemented So Far
 
@@ -20,6 +21,7 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added a Windows launcher that can install portable Node.js, install npm dependencies, and repair a broken Electron install.
 - Added Electron Builder packaging so CI can produce a portable Windows executable that does not require Node/npm on the target PC.
 - Configured Electron user data/cache to stay beside the app, making version swaps and cleanup folder-based.
+- Moved Electron and packaging dependencies behind optional installs so normal browser source launch has fewer transient packages and avoids Electron install scripts.
 
 ## Launcher Behavior
 
@@ -28,10 +30,8 @@ This file tracks the practical work being done in the repo so the project has a 
 - Source-mode launch is pinned to Node.js 20 because CI uses Node 20 and Electron install scripts are less fragile there than under newer global Node/npm pairs.
 - If no Node 20 runtime exists, it downloads portable Node.js 20 into `.runtime/`.
 - If Node 20 setup fails, it can fall back to system Node/npm, but that path is less preferred.
-- It installs dependencies when `node_modules/` is missing.
-- It checks for `node_modules/electron/dist/electron.exe` and repairs dependencies if Electron is incomplete.
-- Electron repair clears common skip-download flags, runs `npm rebuild electron`, and can run Electron's installer script directly.
-- If Electron still cannot install, source launch falls back to browser preview mode instead of failing completely.
+- It installs browser UI dependencies when `node_modules/` is missing, omitting optional Electron packaging dependencies.
+- It starts Vite browser mode instead of source-mode Electron.
 
 ## Packaging Direction
 
@@ -42,6 +42,8 @@ This file tracks the practical work being done in the repo so the project has a 
 - Runtime user data should live in `WaveGen3D-user-data/` beside the app, so deleting the test folder removes local app state.
 - The source launcher remains useful when working from a Git clone, but it is not the final distribution format.
 - The most stable stack for this project remains React/Three.js plus packaged Electron for the GUI, with Docker/WSL reserved for CAD export.
+- The deprecated `inflight` warning came from transitive Electron/build tooling, not the app's runtime code. Normal source launch now omits that dependency path.
+- Windows package workflows are manual-only during early development; run them from GitHub Actions when a portable artifact is actually needed.
 
 ## Known Limits
 

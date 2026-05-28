@@ -2,16 +2,6 @@ name: Windows Portable Bundle
 
 on:
   workflow_dispatch:
-  push:
-    branches: [experimental]
-    paths:
-      - "apps/**"
-      - "packages/**"
-      - "exporter/**"
-      - "scripts/**"
-      - "Launch-WaveGen3D.bat"
-      - "package.json"
-      - ".github/workflows/windows-portable.yml"
 
 jobs:
   portable-windows:
@@ -27,4 +17,3 @@ jobs:
           name: WaveGen3D-windows-portable
           path: dist/WaveGen3D-windows-portable.zip
           if-no-files-found: error
-

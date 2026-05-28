@@ -2,15 +2,6 @@ name: Windows Packaged App
 
 on:
   workflow_dispatch:
-  push:
-    branches: [experimental]
-    paths:
-      - "apps/**"
-      - "packages/**"
-      - "exporter/**"
-      - "scripts/**"
-      - "package.json"
-      - ".github/workflows/windows-packaged-app.yml"
 
 jobs:
   package-windows:
@@ -21,7 +12,7 @@ jobs:
         with:
           node-version: 20
       - name: Install dependencies
-        run: npm install
+        run: npm install --include=optional
       - name: Package portable Windows app
         run: npm run package:win
       - name: Upload portable executable

@@ -84,11 +84,11 @@ After cloning the repo, double-click:
 Launch-WaveGen3D.bat
 ```
 
-The source-code launcher checks for Node.js/npm, installs app dependencies on the first run, then opens the Electron desktop app. Leave the launcher window open while the app is running.
+The source-code launcher checks for Node.js/npm, installs only browser UI dependencies on the first run, then opens the app in your browser. Leave the launcher window open while the app is running.
 
-If Node.js is not installed, or if a newer global Node version is installed, the launcher downloads a portable Node.js 20 runtime into `.runtime/` automatically. Source-mode testing is pinned to Node 20 because it is the same major version used in CI and is less fragile with Electron's install scripts. The first run needs internet access. Later launches reuse `.runtime/` and `node_modules/` from the project folder.
+If Node.js is not installed, or if a newer global Node version is installed, the launcher downloads a portable Node.js 20 runtime into `.runtime/` automatically. Source-mode testing is pinned to Node 20 because it is the same major version used in CI. The first run needs internet access. Later launches reuse `.runtime/` and `node_modules/` from the project folder.
 
-If Electron's binary install is blocked, the launcher falls back to browser preview mode. Browser preview shows the Three.js UI, but packaged Electron is still the preferred full app path.
+Source launch intentionally avoids Electron. That removes the repeated Electron binary install failures and avoids installing Electron's heavier packaging dependency chain during normal testing. Use the packaged portable app artifact for full desktop behavior.
 
 Manual PowerShell launch:
 
@@ -98,7 +98,7 @@ Manual PowerShell launch:
 
 If the automatic portable runtime download fails, install the current LTS version from <https://nodejs.org> and run the launcher again.
 
-Docker is used for the Linux CAD exporter, not for the regular desktop GUI. Running the GUI inside Docker on Windows adds display-driver and file-sharing friction, while a local Electron app behaves like a normal desktop program.
+Docker is used for the Linux CAD exporter, not for the regular GUI. Running the GUI inside Docker on Windows adds display-driver and file-sharing friction. Browser source mode is for development testing; packaged Electron is for portable desktop testing.
 
 ### Developer launch
 
