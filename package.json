@@ -1,0 +1,23 @@
+{
+  "name": "speaker-wave-gen",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Desktop CAD-style speaker enclosure generator with continuous 3D wave interference relief.",
+  "type": "module",
+  "workspaces": [
+    "apps/desktop",
+    "packages/core"
+  ],
+  "scripts": {
+    "dev": "npm --workspace @speaker-wave-gen/desktop run dev",
+    "build": "npm --workspace @speaker-wave-gen/core run test && npm --workspace @speaker-wave-gen/desktop run build",
+    "test": "npm --workspace @speaker-wave-gen/core run test && python -m unittest discover -s exporter/tests",
+    "test:core": "npm --workspace @speaker-wave-gen/core run test",
+    "test:exporter": "python -m unittest discover -s exporter/tests"
+  },
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
+  }
+}
+

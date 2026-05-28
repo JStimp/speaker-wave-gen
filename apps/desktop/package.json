@@ -1,0 +1,26 @@
+{
+  "name": "@speaker-wave-gen/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/main/main.js",
+  "scripts": {
+    "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron .\"",
+    "build": "vite build",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "@speaker-wave-gen/core": "file:../../packages/core",
+    "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.0.0",
+    "electron": "^31.0.0",
+    "lucide-react": "^0.468.0",
+    "three": "^0.167.0",
+    "vite": "^5.4.0",
+    "wait-on": "^7.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {}
+}
+

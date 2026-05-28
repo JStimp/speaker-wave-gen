@@ -1,0 +1,58 @@
+# Speaker 3D Wave CAD Generator
+
+Desktop CAD-style generator for speaker enclosures with continuous 3D wave-interference relief. The app is designed for hardwood CNC workflows where a full cabinet preview can be split into routable panels without losing the visual wave continuity at the corners.
+
+## What this version builds
+
+- Electron + React + Three.js desktop app for live preview and parameter editing.
+- Shared geometry core that computes wave relief on a 3D cabinet shell.
+- Versioned `*.wavecad.json` project format.
+- Linux-oriented exporter CLI for STEP-first CAD output, with STL/OBJ preview fallbacks.
+- Docker/WSL export path so Windows UI development does not depend on blocked OpenCascade DLLs.
+- Unit tests for schema validation, wave math, preview mesh generation, and seam continuity.
+
+## Repository layout
+
+```text
+apps/desktop        Electron desktop app and Three.js viewport
+packages/core       Shared schema, defaults, wave math, cabinet sampling, preview mesh
+exporter            Python CLI and Docker image for CAD/export generation
+examples            Sample .wavecad.json projects
+scripts             Helper scripts for Docker/WSL exporter runs
+docs                Architecture and CAD export notes
+```
+
+## Quick start
+
+```bash
+npm install
+npm run dev
+```
+
+The renderer starts through Vite and Electron opens the desktop shell.
+
+Run dependency-light tests:
+
+```bash
+npm test
+```
+
+Run the exporter locally:
+
+```bash
+python -m pip install -e exporter
+python -m wavecad_exporter --config examples/default-speaker.wavecad.json --out exports --format all --panel-mode separated
+```
+
+For STEP output, use the Docker/WSL exporter path on Linux with OpenCascade/OCP available:
+
+```bash
+docker build -f exporter/Dockerfile -t speaker-wave-exporter .
+docker run --rm -v "%cd%:/work" speaker-wave-exporter --config /work/examples/default-speaker.wavecad.json --out /work/exports --format all --panel-mode separated
+```
+
+## Design direction
+
+The wave field is evaluated on the actual cabinet shell, not on independent flat panels. Panel exports are derived from that shell, which keeps matching relief heights along shared edges. Driver centers are the default wave sources, and manual point sources can be added for tuning.
+
+STEP is the preferred manufacturing exchange format. STL and OBJ are included for preview, fallback, and inspection, but they are not treated as the primary CAD workflow.

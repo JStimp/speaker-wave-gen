@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "speaker-wave-exporter"
+version = "0.1.0"
+description = "Linux CAD exporter for Speaker Wave CAD projects."
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+cad = [
+  "cadquery-ocp>=7.7.0"
+]
+
+[project.scripts]
+wavecad-export = "wavecad_exporter.__main__:main"
+
+[tool.setuptools]
+packages = ["wavecad_exporter"]
+
