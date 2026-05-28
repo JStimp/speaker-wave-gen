@@ -5,6 +5,7 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 Set-Location $repoRoot
 $runtimeRoot = Join-Path $repoRoot ".runtime"
 $portableNodeMarker = Join-Path $runtimeRoot "node-path.txt"
+$preferredNodeMajor = 20
 
 function Find-Command {
   param(
@@ -20,6 +21,20 @@ function Find-Command {
   }
 
   return $null
+}
+
+function Get-NodeMajor {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$NodePath
+  )
+
+  try {
+    $version = (& $NodePath --version).Trim()
+    return [int](($version -replace "^v", "").Split(".")[0])
+  } catch {
+    return $null
+  }
 }
 
 function Get-PortableNodeBin {
@@ -46,6 +61,11 @@ function Get-PortableNodeBin {
     $npmCmd = Join-Path $nodeDir "npm.cmd"
 
     if ((Test-Path -LiteralPath $nodeExe) -and (Test-Path -LiteralPath $npmCmd)) {
+      $major = Get-NodeMajor -NodePath $nodeExe
+      if ($major -ne $preferredNodeMajor) {
+        continue
+      }
+
       Set-Content -LiteralPath $portableNodeMarker -Value (Split-Path -Leaf $nodeDir) -Encoding UTF8
       return @{
         Node = $nodeExe
@@ -64,13 +84,13 @@ function Install-PortableNode {
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
   Write-Host "Node.js was not found on this PC." -ForegroundColor Yellow
-  Write-Host "Downloading a portable Node.js LTS runtime into .runtime..."
+  Write-Host "Downloading a portable Node.js $preferredNodeMajor runtime into .runtime..."
 
   $index = Invoke-RestMethod -Uri "https://nodejs.org/dist/index.json"
-  $release = $index | Where-Object { $_.lts -ne $false } | Select-Object -First 1
+  $release = $index | Where-Object { $_.version -like "v$preferredNodeMajor.*" } | Select-Object -First 1
 
   if (-not $release) {
-    throw "Could not find a Node.js LTS release from nodejs.org."
+    throw "Could not find a Node.js $preferredNodeMajor release from nodejs.org."
   }
 
   $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "arm64" } else { "x64" }
@@ -115,8 +135,11 @@ function Clear-NpmInstallBlockers {
   }
 
   $env:npm_config_ignore_scripts = "false"
-  $env:npm_config_electron_skip_binary_download = "false"
-  $env:ELECTRON_SKIP_BINARY_DOWNLOAD = "0"
+  $env:npm_config_package_lock = "false"
+  $env:npm_config_audit = "false"
+  $env:npm_config_fund = "false"
+  $env:ELECTRON_CACHE = Join-Path $runtimeRoot "electron-cache"
+  New-Item -ItemType Directory -Force -Path $env:ELECTRON_CACHE | Out-Null
 }
 
 function Get-ElectronPackageDirs {
@@ -171,7 +194,7 @@ function Install-AppDependencies {
 
   Clear-NpmInstallBlockers
   Write-Host $Reason -ForegroundColor Yellow
-  & $npm install --ignore-scripts=false --foreground-scripts
+  & $npm install --ignore-scripts=false --foreground-scripts --package-lock=false --audit=false --fund=false
   if ($LASTEXITCODE -ne 0) {
     Write-Host "Dependency install failed." -ForegroundColor Red
     exit $LASTEXITCODE
@@ -187,7 +210,7 @@ function Repair-ElectronInstall {
   & $npm rebuild electron --ignore-scripts=false --foreground-scripts
   if ($LASTEXITCODE -ne 0 -or -not (Test-ElectronPackagePresent)) {
     Write-Host "Electron rebuild did not restore the package; retrying npm install..." -ForegroundColor Yellow
-    & $npm install --ignore-scripts=false --foreground-scripts
+    & $npm install --ignore-scripts=false --foreground-scripts --package-lock=false --audit=false --fund=false
     if ($LASTEXITCODE -ne 0) {
       Write-Host "Dependency install failed." -ForegroundColor Red
       exit $LASTEXITCODE
@@ -211,20 +234,53 @@ function Repair-ElectronInstall {
   }
 }
 
+function Start-BrowserPreview {
+  Write-Host "Starting browser preview mode instead." -ForegroundColor Yellow
+  Write-Host "This runs the same React/Three.js UI in your browser without Electron file dialogs."
+  Write-Host "Leave this window open while the preview is running."
+  Write-Host ""
+  & $npm run web
+  exit $LASTEXITCODE
+}
+
 Write-Host ""
 Write-Host "WaveGen3D Launcher" -ForegroundColor Cyan
 Write-Host "Project: $repoRoot"
 Write-Host ""
 
+$systemNode = Find-Command @("node.exe", "node")
+$systemNpm = Find-Command @("npm.cmd", "npm.exe", "npm")
+$systemNodeMajor = if ($systemNode) { Get-NodeMajor -NodePath $systemNode } else { $null }
 $portable = Get-PortableNodeBin
 
-if ($portable) {
+if ($systemNode -and $systemNpm -and $systemNodeMajor -eq $preferredNodeMajor) {
+  $node = $systemNode
+  $npm = $systemNpm
+} elseif ($portable) {
   $node = $portable.Node
   $npm = $portable.Npm
   $env:Path = "$($portable.Bin);$env:Path"
 } else {
-  $node = Find-Command @("node.exe", "node")
-  $npm = Find-Command @("npm.cmd", "npm.exe", "npm")
+  try {
+    $portable = Install-PortableNode
+    $node = $portable.Node
+    $npm = $portable.Npm
+    $env:Path = "$($portable.Bin);$env:Path"
+  } catch {
+    if ($systemNode -and $systemNpm) {
+      Write-Host "Portable Node.js $preferredNodeMajor setup failed; falling back to system Node." -ForegroundColor Yellow
+      Write-Host $_.Exception.Message
+      $node = $systemNode
+      $npm = $systemNpm
+    } else {
+      Write-Host ""
+      Write-Host "Automatic Node.js setup failed." -ForegroundColor Red
+      Write-Host $_.Exception.Message
+      Write-Host ""
+      Write-Host "Install Node.js $preferredNodeMajor LTS from https://nodejs.org, then run Launch-WaveGen3D.bat again."
+      exit 1
+    }
+  }
 }
 
 if (-not $node -or -not $npm) {
@@ -238,7 +294,7 @@ if (-not $node -or -not $npm) {
     Write-Host "Automatic Node.js setup failed." -ForegroundColor Red
     Write-Host $_.Exception.Message
     Write-Host ""
-    Write-Host "Install the current LTS version from https://nodejs.org, then run Launch-WaveGen3D.bat again."
+    Write-Host "Install Node.js $preferredNodeMajor LTS from https://nodejs.org, then run Launch-WaveGen3D.bat again."
     exit 1
   }
 }
@@ -262,8 +318,8 @@ if (-not (Test-ElectronInstall)) {
 if (-not (Test-ElectronInstall)) {
   Write-Host "Electron still did not install correctly." -ForegroundColor Red
   Write-Host "This usually means the Electron binary download was blocked or skipped."
-  Write-Host "Try deleting node_modules in this project folder and launching again, or use the portable packaged app artifact from GitHub Actions."
-  exit 1
+  Write-Host "The most stable app path is the portable packaged app artifact from GitHub Actions."
+  Start-BrowserPreview
 }
 
 Write-Host "Starting WaveGen3D desktop app..." -ForegroundColor Green

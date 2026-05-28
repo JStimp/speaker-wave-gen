@@ -11,6 +11,8 @@
 - Improved the launcher to download portable Node.js when Node is missing.
 - Improved the launcher to detect and repair incomplete Electron installs.
 - Improved Electron repair to run npm lifecycle scripts and Electron's binary installer directly when needed.
+- Pinned source-mode launcher setup to portable Node.js 20 and stopped using global Node 24 by default.
+- Added browser preview fallback when Electron's binary install is blocked in source mode.
 - Added CI for core tests, exporter tests, desktop build, Docker exporter build, and portable Windows bundle creation.
 - Added the V2 app scaffold: Electron, React, Three.js viewport, shared geometry core, Python exporter, docs, and sample project file.
 - Replaced the v1 2D surface prototype files with the new 3D cabinet-shell architecture.

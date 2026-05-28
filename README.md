@@ -86,7 +86,9 @@ Launch-WaveGen3D.bat
 
 The source-code launcher checks for Node.js/npm, installs app dependencies on the first run, then opens the Electron desktop app. Leave the launcher window open while the app is running.
 
-If Node.js is not installed, the launcher downloads a portable Node.js LTS runtime into `.runtime/` automatically. The first run needs internet access. Later launches reuse `.runtime/` and `node_modules/` from the project folder.
+If Node.js is not installed, or if a newer global Node version is installed, the launcher downloads a portable Node.js 20 runtime into `.runtime/` automatically. Source-mode testing is pinned to Node 20 because it is the same major version used in CI and is less fragile with Electron's install scripts. The first run needs internet access. Later launches reuse `.runtime/` and `node_modules/` from the project folder.
+
+If Electron's binary install is blocked, the launcher falls back to browser preview mode. Browser preview shows the Three.js UI, but packaged Electron is still the preferred full app path.
 
 Manual PowerShell launch:
 

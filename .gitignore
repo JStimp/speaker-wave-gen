@@ -1,6 +1,7 @@
 node_modules/
 .runtime/
 .wavegen3d-user-data/
+package-lock.json
 dist/
 dist-packaged/
 out/

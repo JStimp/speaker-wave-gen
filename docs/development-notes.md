@@ -25,11 +25,13 @@ This file tracks the practical work being done in the repo so the project has a 
 
 - `Launch-WaveGen3D.bat` calls `scripts/launch-windows.ps1`.
 - The launcher first looks for a bundled `.runtime/node-*-win-*` folder.
-- If no bundled runtime exists, it uses system Node/npm if available.
-- If neither exists, it downloads portable Node.js LTS into `.runtime/`.
+- Source-mode launch is pinned to Node.js 20 because CI uses Node 20 and Electron install scripts are less fragile there than under newer global Node/npm pairs.
+- If no Node 20 runtime exists, it downloads portable Node.js 20 into `.runtime/`.
+- If Node 20 setup fails, it can fall back to system Node/npm, but that path is less preferred.
 - It installs dependencies when `node_modules/` is missing.
 - It checks for `node_modules/electron/dist/electron.exe` and repairs dependencies if Electron is incomplete.
 - Electron repair clears common skip-download flags, runs `npm rebuild electron`, and can run Electron's installer script directly.
+- If Electron still cannot install, source launch falls back to browser preview mode instead of failing completely.
 
 ## Packaging Direction
 
@@ -39,6 +41,7 @@ This file tracks the practical work being done in the repo so the project has a 
 - The packaged app should stay portable during testing. Avoid installer targets until the app is stable.
 - Runtime user data should live in `WaveGen3D-user-data/` beside the app, so deleting the test folder removes local app state.
 - The source launcher remains useful when working from a Git clone, but it is not the final distribution format.
+- The most stable stack for this project remains React/Three.js plus packaged Electron for the GUI, with Docker/WSL reserved for CAD export.
 
 ## Known Limits
 
