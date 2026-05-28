@@ -24,6 +24,26 @@ docs                Architecture and CAD export notes
 
 ## Quick start
 
+### Windows desktop launch
+
+After cloning the repo, double-click:
+
+```text
+Launch-WaveGen3D.bat
+```
+
+The launcher checks for Node.js/npm, installs app dependencies on the first run, then opens the Electron desktop app. Leave the launcher window open while the app is running.
+
+Manual PowerShell launch:
+
+```powershell
+.\Launch-WaveGen3D.bat
+```
+
+If Node.js is missing, install the current LTS version from <https://nodejs.org> and run the launcher again.
+
+### Developer launch
+
 ```bash
 npm install
 npm run dev

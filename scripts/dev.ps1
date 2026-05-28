@@ -1,3 +1,2 @@
 $ErrorActionPreference = "Stop"
-npm run dev
-
+& (Join-Path $PSScriptRoot "launch-windows.ps1")
