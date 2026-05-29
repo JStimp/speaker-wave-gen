@@ -7,7 +7,9 @@
     low: 16,
     medium: 24,
     high: 36,
-    ultra: 52
+    ultra: 56,
+    fine: 80,
+    production: 112
   };
 
   const DEFAULT_PROJECT = {
@@ -66,7 +68,7 @@
       minThickness: 0.47
     },
     preview: {
-      resolution: "medium",
+      resolution: "high",
       showSeams: true,
       showDrivers: true,
       showSources: true,
@@ -75,7 +77,8 @@
       showAxes: true,
       showDimensions: true,
       showGrid: true,
-      colorMode: "height"
+      colorMode: "relief",
+      heightContrast: 1.75
     },
     panelization: {
       mode: "separated",
@@ -83,8 +86,9 @@
       cornerStrategy: "matchedReliefEdges"
     },
     export: {
-      formats: ["json", "obj", "stl"],
-      stepMode: "plannedDockerExporter"
+      formats: ["json", "obj", "stl", "step"],
+      resolution: "production",
+      stepMode: "experimentalFacetedStep"
     }
   };
 
@@ -180,7 +184,9 @@
   function collectSources(project) {
     const driverSources = project.drivers
       .filter((driver) => driver.source && driver.source.enabled)
-      .map((driver) => ({
+      .map((driver, index) => ({
+        key: "driver:" + index,
+        index,
         id: driver.id,
         label: driver.label || driver.id,
         kind: "driver",
@@ -194,7 +200,9 @@
 
     const manualSources = project.manualSources
       .filter((source) => source.enabled !== false)
-      .map((source) => ({
+      .map((source, index) => ({
+        key: "manual:" + index,
+        index,
         id: source.id,
         label: source.label || source.id,
         kind: "manual",
@@ -347,7 +355,9 @@
 
   function createDriverOverlays(project) {
     const y = project.cabinet.dimensions.depth / 2 + project.cabinet.dimensions.depth * 0.006;
-    return project.drivers.map((driver) => ({
+    return project.drivers.map((driver, index) => ({
+      key: "driver:" + index,
+      index,
       id: driver.id,
       label: driver.label,
       center: { x: driver.center.x, y, z: driver.center.z },

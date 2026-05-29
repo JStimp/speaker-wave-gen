@@ -83,7 +83,7 @@ button:hover,
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 390px;
+  grid-template-columns: minmax(0, 1fr) 430px;
   min-height: 0;
 }
 
@@ -129,13 +129,13 @@ button:hover,
   min-height: 0;
   overflow: auto;
   border-left: 1px solid #2c2f29;
-  padding: 14px;
+  padding: 12px 14px 18px;
   background: #171a15;
 }
 
 .panel {
   border-top: 1px solid #30342c;
-  padding: 14px 0;
+  padding: 12px 0;
 }
 
 .panel:first-child {
@@ -146,6 +146,7 @@ button:hover,
 .panel h2 {
   margin: 0 0 12px;
   font-size: 14px;
+  letter-spacing: 0;
 }
 
 .panel label {
@@ -189,7 +190,7 @@ button:hover,
 input,
 select {
   width: 100%;
-  height: 32px;
+  height: 34px;
   border: 1px solid #3e4038;
   border-radius: 5px;
   padding: 0 9px;
@@ -235,22 +236,92 @@ button:focus,
   padding: 5px 8px;
 }
 
-.source-card {
-  border: 1px solid #34362f;
-  border-radius: 6px;
-  padding: 10px;
-  margin-bottom: 10px;
-  background: #11130f;
+.source-list {
+  display: grid;
+  gap: 7px;
+  margin: 2px 0 12px;
 }
 
-.source-card strong {
+.source-chip {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #34362f;
+  border-radius: 6px;
+  padding: 8px 9px;
+  text-align: left;
+  background: #11130f;
+  color: #edf2e8;
+}
+
+.source-chip:hover,
+.source-chip.active {
+  border-color: var(--source-color, #d6b84d);
+  background: #1b2018;
+}
+
+.source-chip.active {
+  box-shadow: inset 3px 0 0 var(--source-color, #d6b84d);
+}
+
+.source-swatch {
+  width: 10px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--source-color, #d6b84d);
+}
+
+.source-chip-title {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.source-chip-title strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 13px;
 }
 
-.source-card .remove {
+.source-chip-title span,
+.source-chip-meta {
+  color: #aeb6a7;
+  font-size: 11px;
+}
+
+.source-editor {
+  border: 1px solid #34382f;
+  border-radius: 6px;
+  padding: 10px;
+  background: #11130f;
+}
+
+.source-editor-header {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 10px;
+}
+
+.source-editor-header strong {
+  font-size: 14px;
+}
+
+.source-editor .remove {
   min-height: 28px;
   padding: 4px 8px;
   color: #ffd2cc;
+}
+
+.source-empty,
+.status-text {
+  color: #aeb6a7;
+  line-height: 1.45;
+  margin: 0;
+  font-size: 12px;
 }
 
 .note p {

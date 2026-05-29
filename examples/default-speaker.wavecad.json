@@ -54,7 +54,7 @@
     "minThickness": 0.47
   },
   "preview": {
-    "resolution": "medium",
+    "resolution": "high",
     "showSeams": true,
     "showDrivers": true,
     "showSources": true,
@@ -63,7 +63,8 @@
     "showAxes": true,
     "showDimensions": true,
     "showGrid": true,
-    "colorMode": "height"
+    "colorMode": "relief",
+    "heightContrast": 1.75
   },
   "panelization": {
     "mode": "separated",
@@ -73,7 +74,8 @@
     "edgeAllowance": 2
   },
   "export": {
-    "formats": ["json", "obj", "stl"],
-    "stepMode": "plannedDockerExporter"
+    "formats": ["json", "obj", "stl", "step"],
+    "resolution": "production",
+    "stepMode": "experimentalFacetedStep"
   }
 }

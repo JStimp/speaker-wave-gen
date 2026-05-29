@@ -1,22 +1,21 @@
 # STEP Exporter Plan
 
-STEP export is intentionally outside the static prototype. The browser app must stay dependency-free and stable.
+The static prototype now includes an experimental in-house faceted STEP export. That is useful for import testing, but it is still mesh-derived. This document tracks the later analytic CAD-kernel exporter.
 
 ## Goal
 
 ```text
 WaveGen3D .wavecad.json
-  -> Docker STEP exporter
-  -> full cabinet STEP
-  -> separated panel STEP files
+  -> CAD-kernel STEP exporter
+  -> clean full cabinet STEP
+  -> separated panel STEP files with matched edges
 ```
 
 ## Proposed Runtime
 
-- Linux Docker image.
-- OpenCascade/OCP, FreeCAD CLI, or another real CAD kernel.
-- No dependency on Windows native CAD DLLs.
-- No dependency on browser app launch.
+- Preferred: dependency-isolated Linux Docker image.
+- Candidate kernels: OpenCascade/OCP, FreeCAD CLI, or another real CAD kernel.
+- The static browser app should stay able to launch without this runtime.
 
 ## Inputs
 
@@ -32,7 +31,12 @@ WaveGen3D .wavecad.json
 
 ## Non-Goals For Prototype
 
-- No browser-generated STEP.
-- No fake STEP files that are really mesh exports in disguise.
+- No claim that browser-generated faceted STEP is final manufacturing CAD.
 - No Docker requirement to open or preview the app.
 
+## Current Browser STEP
+
+- Runs fully in `app/exporters.js`.
+- Rebuilds from the selected export quality.
+- Writes a faceted BREP STEP from triangular faces.
+- Intended for CAD import experiments before the analytic exporter exists.

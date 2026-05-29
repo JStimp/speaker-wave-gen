@@ -7,15 +7,18 @@ The static app exports:
 - `.wavecad.json`
 - `.obj`
 - `.stl`
+- `.step`
 - `.png` preview screenshot
 
 OBJ and STL are mesh exports for inspection and rough CAM experiments. They are not editable CAD surfaces. Mesh coordinates use the selected project units.
 
-The exported mesh follows the current preview settings that affect geometry, including the flat-bottom option. In flat-bottom mode, the bottom surface stays on `Z=0`.
+OBJ, STL, and STEP exports rebuild from the selected export quality rather than the live preview resolution. The exported mesh follows geometry settings such as flat-bottom mode. In flat-bottom mode, the bottom surface stays on `Z=0`.
 
 ## STEP
 
-STEP is not generated in the static prototype. Real STEP output needs a CAD kernel and belongs in a separate Docker exporter. See [STEP exporter plan](step-exporter-plan.md).
+The static prototype includes an experimental in-house faceted STEP export. It writes a STEP BREP made from triangular faces, which is useful for testing CAD import and workflow expectations.
+
+This is not the final analytic CAD target. Clean editable CAD surfaces and separated panel STEP files still need a CAD-kernel exporter. See [STEP exporter plan](step-exporter-plan.md).
 
 ## Panel Strategy
 

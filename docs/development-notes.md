@@ -20,7 +20,10 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added preview aids: outline box, XYZ origin axes, floor grid toggle, reset view, and dimension guide overlays tied to cabinet controls.
 - Changed the coordinate system to X width, Y depth, Z height with the origin at the floor center.
 - Added inches as the default unit plus inch/mm conversion in the project controls.
-- Added browser JSON, OBJ, STL, and PNG exports.
+- Added focused source editing with selectable source chips and preview source marker selection.
+- Improved wave relief visualization with computed normals and higher-contrast color modes.
+- Added independent export quality so OBJ/STL/STEP can be generated at higher resolution than preview.
+- Added browser JSON, OBJ, STL, experimental faceted STEP, and PNG exports.
 - Added an example `default-speaker.wavecad.json` project.
 - Added a browser smoke test page.
 - Reduced CI to static file and dependency-free checks.
@@ -42,7 +45,7 @@ This file tracks the practical work being done in the repo so the project has a 
 - Rectangular cabinet only.
 - Browser file dialogs use upload/download controls.
 - OBJ/STL are mesh exports, not editable CAD surfaces.
-- STEP export is planned as a separate Docker tool, not part of the static prototype.
+- Built-in STEP is faceted mesh STEP. Analytic STEP surfaces and separated CAD panels remain future work.
 
 ## Verification Run By Codex
 

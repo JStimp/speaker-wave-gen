@@ -9,8 +9,8 @@ WaveGen3D is a static browser prototype. The first priority is a stable app that
 - Static browser UI in `app/`.
 - Vendored Three.js files in `app/vendor/`.
 - Browser-side geometry math in `app/geometry.js`.
-- Browser-side JSON/OBJ/STL exporters in `app/exporters.js`.
-- Future STEP export documented separately in `docs/step-exporter-plan.md`.
+- Browser-side JSON/OBJ/STL/STEP exporters in `app/exporters.js`.
+- Future CAD-kernel STEP direction documented separately in `docs/step-exporter-plan.md`.
 
 ## Data Flow
 
@@ -19,7 +19,7 @@ User edits controls
   -> project object updates in memory
   -> geometry mesh rebuilds in the browser
   -> Three.js preview redraws
-  -> user downloads JSON, OBJ, STL, or PNG
+  -> user downloads JSON, OBJ, STL, STEP, or PNG
 ```
 
 ## Geometry Model
@@ -46,6 +46,10 @@ Projects default to inches. Switching between inches and millimeters converts ca
 
 The viewer can draw an original-size outline box, RGB XYZ origin axes, a floor grid on `Z=0`, and live dimension guide lines. The width, depth, and height controls are keyed to those same axis colors so it is clear which model direction will change.
 
+Sources are edited through compact selectable chips plus one focused editor. Clicking a source marker in the preview also selects that source, so source changes do not require scrolling through every driver.
+
+Preview mesh resolution and output mesh quality are separate. The preview can stay responsive while OBJ, STL, and experimental STEP exports rebuild from a denser mesh.
+
 ## Stability Boundary
 
-The active prototype has no Node, npm, Vite, Rollup, Electron, Python, Docker, or CAD-kernel dependency. STEP export is a future Docker tool and must not be required to preview the app.
+The active prototype has no Node, npm, Vite, Rollup, Electron, Python, Docker, or CAD-kernel dependency. The built-in STEP export is faceted mesh STEP; analytic STEP solids remain a future CAD-kernel track.
