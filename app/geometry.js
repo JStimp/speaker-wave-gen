@@ -179,13 +179,11 @@
     const hx = dims.width / 2;
     const hy = dims.depth / 2;
     const h = dims.height;
-    const bottomFade = flatBottom ? smoothstep(0, Math.max(radius * 1.5, 0.0001), p.z) : 1;
-    const xyRadius = radius * bottomFade;
     const topRadius = radius;
-    const bottomRadius = flatBottom ? 0 : radius;
+    const bottomRadius = radius;
 
-    const qx = xyRadius > 0 ? clamp(p.x, -hx + xyRadius, hx - xyRadius) : p.x;
-    const qy = xyRadius > 0 ? clamp(p.y, -hy + xyRadius, hy - xyRadius) : p.y;
+    const qx = clamp(p.x, -hx + radius, hx - radius);
+    const qy = clamp(p.y, -hy + radius, hy - radius);
     const qz = clamp(p.z, bottomRadius, h - topRadius);
     const vx = p.x - qx;
     const vy = p.y - qy;

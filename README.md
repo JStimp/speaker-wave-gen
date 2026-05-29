@@ -22,7 +22,7 @@ You can also open `app/index.html` directly in a browser.
 
 - Rectangular speaker cabinet preview.
 - CAD-style coordinates: X width, Y depth, Z height, with the origin at the floor center and the bottom on `Z=0`.
-- Continuous wave relief across the active waved faces, with an optional flat bottom that keeps the contact surface closed on `Z=0` while lower wall relief curves inward near the floor.
+- Continuous wave relief across the active waved faces, with an optional flat bottom that keeps the contact surface on `Z=0` while the lower perimeter rounds inward and upward.
 - Corner wrap control for smoother wave continuity around softened cabinet edges.
 - Unit selection for inches or millimeters.
 - Driver/source add/remove controls with selectable source chips and a focused source editor.

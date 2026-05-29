@@ -16,14 +16,14 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added browser geometry math for cuboid shell sampling, continuous wave relief, driver overlays, source overlays, and seam overlays.
 - Added relief limiting from wall thickness and minimum remaining wall settings.
 - Added side-panel controls to add/remove drivers and point sources.
-- Added a flat-bottom option that keeps the bottom face planar for real-world placement and turns lower-wall outward relief inward near the floor edge.
+- Added a flat-bottom option that keeps the underside contact patch planar for real-world placement and rounds the lower perimeter inward and upward.
 - Added preview aids: outline box, XYZ origin axes, floor grid toggle, front-facing reset view, dimension guide overlays, and relief analysis planes tied to live deviation stats.
 - Changed the coordinate system to X width, Y depth, Z height with the origin at the floor center.
 - Added inches as the default unit plus inch/mm conversion in the project controls.
 - Added focused source editing with selectable source chips and preview source marker selection.
 - Improved wave relief visualization with computed normals and higher-contrast color modes.
 - Added independent export quality so OBJ/STL/STEP can be generated at higher resolution than preview.
-- Added corner wrap geometry for smoother wrapped edges while preserving a flat bottom.
+- Added corner wrap geometry for smoother wrapped edges while preserving a flat underside contact patch.
 - Added browser JSON, OBJ, STL, smooth spline STEP, faceted STEP fallback, and PNG exports.
 - Added an example `default-speaker.wavecad.json` project.
 - Added a browser smoke test page.

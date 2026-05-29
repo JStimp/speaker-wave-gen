@@ -34,11 +34,11 @@ The wave field is evaluated on the full cuboid shell before any panel thinking, 
 
 Front-mounted sources use a cuboid-unfolding distance model on sharp cabinets. When corner wrap is enabled, the wave field switches to the rounded 3D surface positions at wrapped edges so adjacent faces keep matched relief.
 
-Corner wrap is not a simple hard fillet. It progressively softens the vertical and upper edges while fading at the floor when flat-bottom mode is enabled, so the bottom can remain stable on `Z=0`.
+Corner wrap is not a simple hard fillet. It progressively softens the vertical, upper, and lower perimeter edges. In flat-bottom mode, the central underside stays planar on `Z=0` while the perimeter rounds inward and upward away from the contact patch.
 
 Relief depth is clipped by the requested relief depth and by the cabinet wall thickness minus the configured minimum remaining wall. This keeps aggressive settings from previewing an impossible carve depth.
 
-When flat bottom is enabled, the bottom face receives zero wave displacement and the side relief is guarded at the floor. Positive outward relief near the floor transitions inward instead of creating an outward flange, while the exact contact surface stays closed and planar on `Z=0`.
+When flat bottom is enabled, the bottom face receives zero wave displacement and the lower perimeter is guarded against outward flaring. Positive outward relief near the floor transitions inward, while the actual contact surface stays closed and planar on `Z=0`.
 
 ## Units
 
