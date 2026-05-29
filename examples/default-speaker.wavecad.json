@@ -7,6 +7,7 @@
   },
   "cabinet": {
     "preset": "rectangular",
+    "cornerWrap": 0.18,
     "dimensions": {
       "width": 20.5,
       "height": 30,
@@ -76,6 +77,7 @@
   "export": {
     "formats": ["json", "obj", "stl", "step"],
     "resolution": "production",
-    "stepMode": "experimentalFacetedStep"
+    "stepMode": "smoothSurfaceStep",
+    "surfaceControlLimit": 34
   }
 }

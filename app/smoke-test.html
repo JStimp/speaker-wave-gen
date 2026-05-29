@@ -28,12 +28,15 @@
         const mesh = WaveGeometry.generatePreviewMesh(project, { resolution: "draft" });
         const exportMesh = WaveGeometry.generatePreviewMesh(project, { resolution: "high" });
         const dims = project.cabinet.dimensions;
-        const front = WaveGeometry.pointOnFace("front", 1, 0.42, dims);
-        const right = WaveGeometry.pointOnFace("right", 0, 0.42, dims);
-        const bottom = WaveGeometry.pointOnFace("bottom", 0.37, 0.62, dims);
-        const back = WaveGeometry.pointOnFace("back", 0.41, 0.58, dims);
+        const front = WaveGeometry.pointOnFace("front", 1, 0.42, dims, project);
+        const right = WaveGeometry.pointOnFace("right", 0, 0.42, dims, project);
+        const frontFloor = WaveGeometry.pointOnFace("front", 0.37, 0, dims, project);
+        const bottomFront = WaveGeometry.pointOnFace("bottom", 0.37, 0, dims, project);
+        const bottom = WaveGeometry.pointOnFace("bottom", 0.37, 0.62, dims, project);
+        const back = WaveGeometry.pointOnFace("back", 0.41, 0.58, dims, project);
         const frontHeight = WaveGeometry.computeWaveDisplacement(front, project).displacement;
         const rightHeight = WaveGeometry.computeWaveDisplacement(right, project).displacement;
+        const frontFloorHeight = WaveGeometry.computeWaveDisplacement(frontFloor, project).displacement;
         const bottomHeight = WaveGeometry.computeWaveDisplacement(bottom, project).displacement;
         const backHeight = WaveGeometry.computeWaveDisplacement(back, project).displacement;
         const minZ = Math.min.apply(null, mesh.vertices.filter((value, index) => index % 3 === 2));
@@ -43,12 +46,14 @@
         check("mesh has finite vertices", mesh.vertices.length > 0 && mesh.vertices.every(Number.isFinite));
         check("export mesh is higher resolution than preview", exportMesh.summary.triangleCount > mesh.summary.triangleCount);
         check("front/right seam heights match", Math.abs(frontHeight - rightHeight) < 1e-9);
+        check("side relief fades to zero at the floor", Math.abs(frontFloorHeight) < 1e-12);
+        check("front/bottom floor edge positions match", Math.abs(frontFloor.position.x - bottomFront.position.x) < 1e-12 && Math.abs(frontFloor.position.y - bottomFront.position.y) < 1e-12 && Math.abs(frontFloor.position.z - bottomFront.position.z) < 1e-12);
         check("flat bottom has zero wave displacement", Math.abs(bottomHeight) < 1e-12);
         check("bottom surface remains at Z0", Math.abs(minZ) < 1e-12);
         check("back face still receives waves", Math.abs(backHeight) > 1e-5);
         check("OBJ exporter returns text", WaveExporters.meshToObj(exportMesh, "test").length > 100);
         check("STL exporter returns text", WaveExporters.meshToStl(exportMesh, "test").length > 100);
-        check("STEP exporter returns faceted STEP text", WaveExporters.meshToStep(mesh, project, "test").includes("MANIFOLD_SOLID_BREP"));
+        check("STEP exporter returns smooth BREP text", WaveExporters.meshToStep(mesh, project, "test").includes("B_SPLINE_SURFACE_WITH_KNOTS"));
 
         const results = document.getElementById("results");
         results.textContent = lines.join("\n");

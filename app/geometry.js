@@ -21,6 +21,7 @@
     },
     cabinet: {
       preset: "rectangular",
+      cornerWrap: 0.18,
       dimensions: {
         width: 20.5,
         height: 30,
@@ -88,7 +89,8 @@
     export: {
       formats: ["json", "obj", "stl", "step"],
       resolution: "production",
-      stepMode: "experimentalFacetedStep"
+      stepMode: "smoothSurfaceStep",
+      surfaceControlLimit: 34
     }
   };
 
@@ -147,7 +149,7 @@
     return project.cabinet.dimensions;
   }
 
-  function pointOnFace(face, u, v, dims) {
+  function pointOnFace(face, u, v, dims, project) {
     const width = dims.width;
     const height = dims.height;
     const depth = dims.depth;
@@ -156,13 +158,53 @@
     const yFromFront = depth / 2 - u * depth;
     const yFromFrontByV = depth / 2 - v * depth;
 
-    if (face === "front") return makePoint(face, u, v, xLinear, depth / 2, zLinear, [0, 1, 0]);
-    if (face === "back") return makePoint(face, u, v, (0.5 - u) * width, -depth / 2, zLinear, [0, -1, 0]);
-    if (face === "right") return makePoint(face, u, v, width / 2, yFromFront, zLinear, [1, 0, 0]);
-    if (face === "left") return makePoint(face, u, v, -width / 2, yFromFront, zLinear, [-1, 0, 0]);
-    if (face === "top") return makePoint(face, u, v, xLinear, yFromFrontByV, height, [0, 0, 1]);
-    if (face === "bottom") return makePoint(face, u, v, xLinear, yFromFrontByV, 0, [0, 0, -1]);
+    if (face === "front") return applyCornerWrap(makePoint(face, u, v, xLinear, depth / 2, zLinear, [0, 1, 0]), dims, project);
+    if (face === "back") return applyCornerWrap(makePoint(face, u, v, (0.5 - u) * width, -depth / 2, zLinear, [0, -1, 0]), dims, project);
+    if (face === "right") return applyCornerWrap(makePoint(face, u, v, width / 2, yFromFront, zLinear, [1, 0, 0]), dims, project);
+    if (face === "left") return applyCornerWrap(makePoint(face, u, v, -width / 2, yFromFront, zLinear, [-1, 0, 0]), dims, project);
+    if (face === "top") return applyCornerWrap(makePoint(face, u, v, xLinear, yFromFrontByV, height, [0, 0, 1]), dims, project);
+    if (face === "bottom") return applyCornerWrap(makePoint(face, u, v, xLinear, yFromFrontByV, 0, [0, 0, -1]), dims, project);
     throw new Error("Unknown face: " + face);
+  }
+
+  function applyCornerWrap(point, dims, project) {
+    const wrap = clamp01(Number(project && project.cabinet && project.cabinet.cornerWrap) || 0);
+    const maxRadius = Math.max(0, Math.min(dims.width, dims.depth, dims.height) * 0.22);
+    const radius = maxRadius * wrap;
+    if (radius <= 0.000001) return point;
+
+    const flatBottom = Boolean(project && project.waves && project.waves.flatBottom);
+    const p = point.position;
+    const hx = dims.width / 2;
+    const hy = dims.depth / 2;
+    const h = dims.height;
+    const bottomFade = flatBottom ? smoothstep(0, Math.max(radius * 1.5, 0.0001), p.z) : 1;
+    const xyRadius = radius * bottomFade;
+    const topRadius = radius;
+    const bottomRadius = flatBottom ? 0 : radius;
+
+    const qx = xyRadius > 0 ? clamp(p.x, -hx + xyRadius, hx - xyRadius) : p.x;
+    const qy = xyRadius > 0 ? clamp(p.y, -hy + xyRadius, hy - xyRadius) : p.y;
+    const qz = clamp(p.z, bottomRadius, h - topRadius);
+    const vx = p.x - qx;
+    const vy = p.y - qy;
+    const vz = p.z - qz;
+    const length = Math.sqrt(vx * vx + vy * vy + vz * vz);
+
+    if (length <= 0.000001) return point;
+
+    const effectiveRadius = Math.min(length, radius);
+    const nx = vx / length;
+    const ny = vy / length;
+    const nz = vz / length;
+    point.position = {
+      x: qx + nx * effectiveRadius,
+      y: qy + ny * effectiveRadius,
+      z: qz + nz * effectiveRadius
+    };
+    point.normal = { x: nx, y: ny, z: nz };
+    point.cornerWrapped = true;
+    return point;
   }
 
   function makePoint(face, u, v, x, y, z, normal) {
@@ -221,6 +263,9 @@
     if ((source.face || "front") !== "front") {
       return distance3(point.position, source.center);
     }
+    if (point.cornerWrapped) {
+      return distance3(point.position, { x: source.center.x, y: dims.depth / 2, z: source.center.z });
+    }
     return frontSourceCuboidDistance(point, source, dims);
   }
 
@@ -276,6 +321,12 @@
       displacement = Math.max(-limit, Math.min(limit, displacement));
     }
 
+    if (waves.flatBottom) {
+      const fadeHeight = Math.min(dims.height * 0.12, Math.max(limit * 2.5, Number(dims.wallThickness) * 0.5 || limit));
+      const floorBlend = smoothstep(0, fadeHeight, point.position.z);
+      displacement *= floorBlend;
+    }
+
     return { raw, displacement };
   }
 
@@ -299,7 +350,7 @@
 
       for (let row = 0; row <= grid.rows; row += 1) {
         for (let column = 0; column <= grid.columns; column += 1) {
-          const point = pointOnFace(face, column / grid.columns, row / grid.rows, dims);
+          const point = pointOnFace(face, column / grid.columns, row / grid.rows, dims, normalized);
           const wave = computeWaveDisplacement(point, normalized);
           const displaced = displacePoint(point, wave.displacement);
           vertices.push(displaced.x, displaced.y, displaced.z);
@@ -406,6 +457,20 @@
     const dy = (a.y || 0) - (b.y || 0);
     const dz = (a.z || 0) - (b.z || 0);
     return Math.sqrt(dx * dx + dy * dy + dz * dz);
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function clamp01(value) {
+    return clamp(value, 0, 1);
+  }
+
+  function smoothstep(edge0, edge1, value) {
+    if (edge0 === edge1) return value >= edge1 ? 1 : 0;
+    const t = clamp01((value - edge0) / (edge1 - edge0));
+    return t * t * (3 - 2 * t);
   }
 
   window.WaveGeometry = {

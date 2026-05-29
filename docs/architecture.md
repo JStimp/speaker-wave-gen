@@ -32,11 +32,13 @@ The prototype supports a rectangular enclosure. Coordinates follow a CAD-style f
 
 The wave field is evaluated on the full cuboid shell before any panel thinking, so shared edges use the same relief height.
 
-Front-mounted sources use a cuboid-unfolding distance model. That keeps front-to-side, front-to-top, and, when flat-bottom mode is off, front-to-bottom seams visually continuous.
+Front-mounted sources use a cuboid-unfolding distance model on sharp cabinets. When corner wrap is enabled, the wave field switches to the rounded 3D surface positions at wrapped edges so adjacent faces keep matched relief.
+
+Corner wrap is not a simple hard fillet. It progressively softens the vertical and upper edges while fading at the floor when flat-bottom mode is enabled, so the bottom can remain stable on `Z=0`.
 
 Relief depth is clipped by the requested relief depth and by the cabinet wall thickness minus the configured minimum remaining wall. This keeps aggressive settings from previewing an impossible carve depth.
 
-When flat bottom is enabled, only the bottom face receives zero wave displacement so the cabinet can sit on a real surface. The back, sides, front, and top continue to use the wave field.
+When flat bottom is enabled, the bottom face receives zero wave displacement and the side relief blends to zero at the floor edge. The back, sides, front, and top still use the wave field above that small floor blend, but the base remains closed and planar for a real surface.
 
 ## Units
 
@@ -48,8 +50,8 @@ The viewer can draw an original-size outline box, RGB XYZ origin axes, a floor g
 
 Sources are edited through compact selectable chips plus one focused editor. Clicking a source marker in the preview also selects that source, so source changes do not require scrolling through every driver.
 
-Preview mesh resolution and output mesh quality are separate. The preview can stay responsive while OBJ, STL, and experimental STEP exports rebuild from a denser mesh.
+Preview mesh resolution and output mesh quality are separate. The preview can stay responsive while OBJ, STL, and STEP exports rebuild from a denser mesh.
 
 ## Stability Boundary
 
-The active prototype has no Node, npm, Vite, Rollup, Electron, Python, Docker, or CAD-kernel dependency. The built-in STEP export is faceted mesh STEP; analytic STEP solids remain a future CAD-kernel track.
+The active prototype has no Node, npm, Vite, Rollup, Electron, Python, Docker, or CAD-kernel dependency. The built-in smooth STEP export uses spline surfaces in a BREP shell; higher-order analytic CAD solids remain a future CAD-kernel track.

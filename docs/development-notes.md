@@ -16,14 +16,15 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added browser geometry math for cuboid shell sampling, continuous wave relief, driver overlays, source overlays, and seam overlays.
 - Added relief limiting from wall thickness and minimum remaining wall settings.
 - Added side-panel controls to add/remove drivers and point sources.
-- Added a flat-bottom option that keeps the bottom face planar for real-world placement.
+- Added a flat-bottom option that keeps the bottom face planar for real-world placement and blends side relief to zero at the floor edge.
 - Added preview aids: outline box, XYZ origin axes, floor grid toggle, reset view, and dimension guide overlays tied to cabinet controls.
 - Changed the coordinate system to X width, Y depth, Z height with the origin at the floor center.
 - Added inches as the default unit plus inch/mm conversion in the project controls.
 - Added focused source editing with selectable source chips and preview source marker selection.
 - Improved wave relief visualization with computed normals and higher-contrast color modes.
 - Added independent export quality so OBJ/STL/STEP can be generated at higher resolution than preview.
-- Added browser JSON, OBJ, STL, experimental faceted STEP, and PNG exports.
+- Added corner wrap geometry for smoother wrapped edges while preserving a flat bottom.
+- Added browser JSON, OBJ, STL, smooth spline STEP, faceted STEP fallback, and PNG exports.
 - Added an example `default-speaker.wavecad.json` project.
 - Added a browser smoke test page.
 - Reduced CI to static file and dependency-free checks.
@@ -45,7 +46,7 @@ This file tracks the practical work being done in the repo so the project has a 
 - Rectangular cabinet only.
 - Browser file dialogs use upload/download controls.
 - OBJ/STL are mesh exports, not editable CAD surfaces.
-- Built-in STEP is faceted mesh STEP. Analytic STEP surfaces and separated CAD panels remain future work.
+- Built-in STEP is spline-surface BREP or faceted fallback. Analytic STEP surfaces and separated CAD panels remain future work.
 
 ## Verification Run By Codex
 

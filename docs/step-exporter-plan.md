@@ -1,6 +1,6 @@
 # STEP Exporter Plan
 
-The static prototype now includes an experimental in-house faceted STEP export. That is useful for import testing, but it is still mesh-derived. This document tracks the later analytic CAD-kernel exporter.
+The static prototype now includes an in-house spline-surface STEP export plus a faceted fallback. That is useful for SolidWorks import testing, but it is still generated from sampled browser geometry. This document tracks the later analytic CAD-kernel exporter.
 
 ## Goal
 
@@ -38,5 +38,6 @@ WaveGen3D .wavecad.json
 
 - Runs fully in `app/exporters.js`.
 - Rebuilds from the selected export quality.
-- Writes a faceted BREP STEP from triangular faces.
+- Default mode writes a BREP shell from spline surface faces.
+- Fallback mode writes a faceted BREP STEP from triangular faces.
 - Intended for CAD import experiments before the analytic exporter exists.

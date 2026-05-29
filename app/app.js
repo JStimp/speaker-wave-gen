@@ -402,8 +402,9 @@
     if (format === "obj") Exporters.exportObj(project, outputMesh);
     if (format === "stl") Exporters.exportStl(project, outputMesh);
     if (format === "step") Exporters.exportStep(project, outputMesh);
+    const stepKind = format === "step" && project.export.stepMode === "smoothSurfaceStep" ? " smooth spline" : "";
     setExportStatus(
-      format.toUpperCase() + " export built at " + resolution + " quality (" +
+      format.toUpperCase() + stepKind + " export built at " + resolution + " quality (" +
       outputMesh.summary.vertexCount.toLocaleString() + " verts / " +
       outputMesh.summary.triangleCount.toLocaleString() + " tris, grid " + quality + ")."
     );
@@ -749,7 +750,7 @@
 
   function valueFromInput(input) {
     if (input.type === "checkbox") return input.checked;
-    if (input.type === "number") return Number(input.value);
+    if (input.type === "number" || input.type === "range") return Number(input.value);
     return input.value;
   }
 

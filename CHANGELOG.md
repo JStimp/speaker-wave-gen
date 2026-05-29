@@ -9,14 +9,15 @@
 - Added vendored Three.js browser files and a local-file launcher.
 - Added continuous six-face cuboid wave relief with seam-matched front/side/top/bottom distance math.
 - Added side-panel controls for cabinet dimensions, wall limits, drivers, point sources, relief settings, preview resolution, and overlays.
-- Added flat-bottom geometry mode for a planar underside.
+- Added flat-bottom geometry mode for a planar underside with side relief fading to zero at the floor edge.
 - Added preview helpers for XYZ origin, outline box, floor grid, reset view, and dimension guides.
 - Changed coordinates to X width, Y depth, Z height with the origin at floor center and bottom on `Z=0`.
 - Added inch/mm unit selection with inches as the default.
 - Added focused source editing with selectable source chips and click-to-select preview markers.
 - Improved wave height visualization with computed preview normals and contrast color modes.
 - Added independent export quality so outputs can be denser than preview.
-- Added JSON, OBJ, STL, experimental faceted STEP, and PNG browser exports.
+- Added corner wrap geometry for smoother wave continuity around softened cabinet edges.
+- Added JSON, OBJ, STL, smooth spline STEP, faceted STEP fallback, and PNG browser exports.
 - Added browser smoke test page.
 - Documented STEP as a separate future Docker exporter.
 - Reduced CI to static checks only.
