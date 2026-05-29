@@ -35,7 +35,7 @@
 
     camera = new THREE.PerspectiveCamera(38, 1, 1, 6000);
     camera.up.set(0, 0, 1);
-    camera.position.set(28, -34, 24);
+    camera.position.set(28, 34, 24);
 
     renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -362,6 +362,7 @@
     if (project.preview.showAxes) previewRoot.add(createAxes(dims));
     if (project.preview.showDimensions) previewRoot.add(createDimensionGuides(dims));
     previewRoot.add(createSurface(nextMesh));
+    if (project.preview.showAnalysis) previewRoot.add(createAnalysisPlanes(nextMesh, dims));
 
     if (project.preview.showPanels) previewRoot.add(createWire(nextMesh));
     if (project.preview.showSeams) previewRoot.add(createSeams(nextMesh.overlays.seams));
@@ -503,6 +504,133 @@
     const labelOffset = new THREE.Vector3(0, 0, active ? scale * 0.78 : scale * 0.56);
     group.add(createLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), midpoint.add(labelOffset), active ? scale * 5.8 : scale * 5.0, scale * 1.0));
     return group;
+  }
+
+  function createAnalysisPlanes(nextMesh, dims) {
+    const group = new THREE.Group();
+    const stats = nextMesh.summary.byFace || {};
+    const scale = helperScale(dims);
+    const faces = ["front", "back", "right", "left", "top"];
+    const threshold = Math.max(0.0005, visualScale(dims) * 0.00002);
+
+    faces.forEach((face) => {
+      const faceStats = stats[face];
+      if (!faceStats) return;
+      if (Math.abs(faceStats.maxHeight) > threshold) {
+        group.add(createAnalysisPlane(face, faceStats.maxHeight, dims, 0xf3e46d, 0.13, "Max " + signedDimension(faceStats.maxHeight), scale));
+      }
+      if (Math.abs(faceStats.minHeight) > threshold) {
+        group.add(createAnalysisPlane(face, faceStats.minHeight, dims, 0x4f8df0, 0.13, "Min " + signedDimension(faceStats.minHeight), scale));
+      }
+    });
+
+    return group;
+  }
+
+  function createAnalysisPlane(face, offset, dims, color, opacity, label, scale) {
+    const frame = faceFrame(face, dims, offset);
+    const geometry = rectGeometry(frame.center, frame.u, frame.v);
+    const material = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    const plane = new THREE.Mesh(geometry, material);
+    plane.renderOrder = 4;
+
+    const edgeGeometry = rectLineGeometry(frame.center, frame.u, frame.v);
+    const edgeMaterial = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.68 });
+    const edge = new THREE.Line(edgeGeometry, edgeMaterial);
+    edge.renderOrder = 5;
+
+    const group = new THREE.Group();
+    group.add(plane);
+    group.add(edge);
+
+    if (face === "front" || face === "right" || face === "top") {
+      const labelPosition = frame.center.clone().add(frame.normal.clone().multiplyScalar(scale * 0.7));
+      group.add(createLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), labelPosition, scale * 4.3, scale * 0.78));
+    }
+
+    return group;
+  }
+
+  function faceFrame(face, dims, offset) {
+    const w = dims.width;
+    const d = dims.depth;
+    const h = dims.height;
+    const halfW = w / 2;
+    const halfD = d / 2;
+
+    if (face === "front") {
+      return {
+        center: new THREE.Vector3(0, halfD + offset, h / 2),
+        u: new THREE.Vector3(w, 0, 0),
+        v: new THREE.Vector3(0, 0, h),
+        normal: new THREE.Vector3(0, 1, 0)
+      };
+    }
+    if (face === "back") {
+      return {
+        center: new THREE.Vector3(0, -halfD - offset, h / 2),
+        u: new THREE.Vector3(w, 0, 0),
+        v: new THREE.Vector3(0, 0, h),
+        normal: new THREE.Vector3(0, -1, 0)
+      };
+    }
+    if (face === "right") {
+      return {
+        center: new THREE.Vector3(halfW + offset, 0, h / 2),
+        u: new THREE.Vector3(0, d, 0),
+        v: new THREE.Vector3(0, 0, h),
+        normal: new THREE.Vector3(1, 0, 0)
+      };
+    }
+    if (face === "left") {
+      return {
+        center: new THREE.Vector3(-halfW - offset, 0, h / 2),
+        u: new THREE.Vector3(0, d, 0),
+        v: new THREE.Vector3(0, 0, h),
+        normal: new THREE.Vector3(-1, 0, 0)
+      };
+    }
+    return {
+      center: new THREE.Vector3(0, 0, h + offset),
+      u: new THREE.Vector3(w, 0, 0),
+      v: new THREE.Vector3(0, d, 0),
+      normal: new THREE.Vector3(0, 0, 1)
+    };
+  }
+
+  function rectGeometry(center, u, v) {
+    const halfU = u.clone().multiplyScalar(0.5);
+    const halfV = v.clone().multiplyScalar(0.5);
+    const corners = [
+      center.clone().sub(halfU).sub(halfV),
+      center.clone().add(halfU).sub(halfV),
+      center.clone().add(halfU).add(halfV),
+      center.clone().sub(halfU).add(halfV)
+    ];
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(corners.flatMap((point) => [point.x, point.y, point.z]), 3));
+    geometry.setIndex([0, 1, 2, 0, 2, 3]);
+    geometry.computeVertexNormals();
+    return geometry;
+  }
+
+  function rectLineGeometry(center, u, v) {
+    const halfU = u.clone().multiplyScalar(0.5);
+    const halfV = v.clone().multiplyScalar(0.5);
+    const corners = [
+      center.clone().sub(halfU).sub(halfV),
+      center.clone().add(halfU).sub(halfV),
+      center.clone().add(halfU).add(halfV),
+      center.clone().sub(halfU).add(halfV),
+      center.clone().sub(halfU).sub(halfV)
+    ];
+    return new THREE.BufferGeometry().setFromPoints(corners);
   }
 
   function createGuideCone(position, direction, color, opacity, scale) {
@@ -687,7 +815,18 @@
     document.getElementById("mesh-stats").textContent =
       summary.vertexCount.toLocaleString() + " verts / " +
       summary.triangleCount.toLocaleString() + " tris / " +
-      summary.minHeight.toFixed(3) + " to " + summary.maxHeight.toFixed(3) + " " + unitLabel();
+      signedDimension(summary.minHeight) + " to " + signedDimension(summary.maxHeight) +
+      " / span " + fmtDimension(summary.deviation);
+
+    const analysisStats = document.getElementById("analysis-stats");
+    if (analysisStats) {
+      analysisStats.innerHTML = [
+        '<div><strong>Relief deviation</strong><span>' + fmtDimension(summary.deviation) + '</span></div>',
+        '<div><strong>Max outward</strong><span>' + signedDimension(summary.maxHeight) + '</span></div>',
+        '<div><strong>Max inward</strong><span>' + signedDimension(summary.minHeight) + '</span></div>',
+        '<div><strong>Max absolute</strong><span>' + fmtDimension(summary.maxAbsHeight) + '</span></div>'
+      ].join("");
+    }
   }
 
   function resize() {
@@ -707,7 +846,7 @@
   function resetView() {
     const dims = project.cabinet.dimensions;
     const span = Math.max(dims.width, dims.height, dims.depth);
-    camera.position.set(span * 0.85, -span * 1.08, span * 0.74);
+    camera.position.set(span * 0.85, span * 1.08, span * 0.74);
     controls.target.set(0, 0, dims.height / 2);
     controls.update();
   }
@@ -766,6 +905,12 @@
 
   function fmtDimension(value) {
     return Number(value).toLocaleString(undefined, { maximumFractionDigits: 3 }) + " " + unitLabel();
+  }
+
+  function signedDimension(value) {
+    const number = Number(value) || 0;
+    const sign = number > 0 ? "+" : "";
+    return sign + fmtDimension(number);
   }
 
   function unitLabel() {

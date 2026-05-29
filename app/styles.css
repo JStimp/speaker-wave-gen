@@ -324,6 +324,35 @@ button:focus,
   font-size: 12px;
 }
 
+.analysis-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.analysis-stats div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  border: 1px solid #34382f;
+  border-radius: 6px;
+  padding: 8px;
+  background: #11130f;
+}
+
+.analysis-stats strong {
+  color: #aeb6a7;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.analysis-stats span {
+  color: #eef2e8;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
 .note p {
   color: #b8bfb0;
   line-height: 1.45;

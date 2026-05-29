@@ -16,8 +16,8 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added browser geometry math for cuboid shell sampling, continuous wave relief, driver overlays, source overlays, and seam overlays.
 - Added relief limiting from wall thickness and minimum remaining wall settings.
 - Added side-panel controls to add/remove drivers and point sources.
-- Added a flat-bottom option that keeps the bottom face planar for real-world placement and blends side relief to zero at the floor edge.
-- Added preview aids: outline box, XYZ origin axes, floor grid toggle, reset view, and dimension guide overlays tied to cabinet controls.
+- Added a flat-bottom option that keeps the bottom face planar for real-world placement and turns lower-wall outward relief inward near the floor edge.
+- Added preview aids: outline box, XYZ origin axes, floor grid toggle, front-facing reset view, dimension guide overlays, and relief analysis planes tied to live deviation stats.
 - Changed the coordinate system to X width, Y depth, Z height with the origin at the floor center.
 - Added inches as the default unit plus inch/mm conversion in the project controls.
 - Added focused source editing with selectable source chips and preview source marker selection.

@@ -63,6 +63,7 @@
     "showOutline": true,
     "showAxes": true,
     "showDimensions": true,
+    "showAnalysis": true,
     "showGrid": true,
     "colorMode": "relief",
     "heightContrast": 1.75

@@ -77,6 +77,7 @@
       showOutline: true,
       showAxes: true,
       showDimensions: true,
+      showAnalysis: true,
       showGrid: true,
       colorMode: "relief",
       heightContrast: 1.75
@@ -322,12 +323,27 @@
     }
 
     if (waves.flatBottom) {
-      const fadeHeight = Math.min(dims.height * 0.12, Math.max(limit * 2.5, Number(dims.wallThickness) * 0.5 || limit));
-      const floorBlend = smoothstep(0, fadeHeight, point.position.z);
-      displacement *= floorBlend;
+      displacement = applyFlatBottomTransition(point, dims, displacement, limit);
     }
 
     return { raw, displacement };
+  }
+
+  function applyFlatBottomTransition(point, dims, displacement, limit) {
+    const fadeHeight = Math.min(dims.height * 0.12, Math.max(limit * 2.5, Number(dims.wallThickness) * 0.5 || limit));
+    const floorBlend = smoothstep(0, fadeHeight, point.position.z);
+
+    if (point.face === "bottom" || point.face === "top") {
+      return displacement * floorBlend;
+    }
+
+    if (displacement <= 0) {
+      return displacement * floorBlend;
+    }
+
+    const liftBlend = smoothstep(0, Math.max(fadeHeight * 0.35, 0.0001), point.position.z);
+    const inwardCurl = Math.sin(Math.PI * floorBlend) * liftBlend;
+    return displacement * floorBlend * floorBlend - Math.abs(displacement) * inwardCurl * 0.55;
   }
 
   function generatePreviewMesh(project, options) {
@@ -383,7 +399,7 @@
         seams: createSeamOverlay(dims),
         sources: collectSources(normalized)
       },
-      summary: summarizeMesh(vertices, indices, heights)
+      summary: summarizeMesh(vertices, indices, heights, faceIds)
     };
   }
 
@@ -439,12 +455,38 @@
     return pairs.map((pair) => ({ a: corners[pair[0]], b: corners[pair[1]] }));
   }
 
-  function summarizeMesh(vertices, indices, heights) {
+  function summarizeMesh(vertices, indices, heights, faceIds) {
+    const byFace = {};
+    FACE_NAMES.forEach((face) => {
+      byFace[face] = { minHeight: Infinity, maxHeight: -Infinity, vertexCount: 0 };
+    });
+
+    heights.forEach((height, index) => {
+      const face = faceIds[index];
+      if (!byFace[face]) byFace[face] = { minHeight: Infinity, maxHeight: -Infinity, vertexCount: 0 };
+      byFace[face].minHeight = Math.min(byFace[face].minHeight, height);
+      byFace[face].maxHeight = Math.max(byFace[face].maxHeight, height);
+      byFace[face].vertexCount += 1;
+    });
+
+    Object.keys(byFace).forEach((face) => {
+      if (!byFace[face].vertexCount) {
+        byFace[face].minHeight = 0;
+        byFace[face].maxHeight = 0;
+      }
+      byFace[face].span = byFace[face].maxHeight - byFace[face].minHeight;
+    });
+
+    const minHeight = heights.length ? Math.min.apply(null, heights) : 0;
+    const maxHeight = heights.length ? Math.max.apply(null, heights) : 0;
     return {
       vertexCount: vertices.length / 3,
       triangleCount: indices.length / 3,
-      minHeight: heights.length ? Math.min.apply(null, heights) : 0,
-      maxHeight: heights.length ? Math.max.apply(null, heights) : 0
+      minHeight,
+      maxHeight,
+      deviation: maxHeight - minHeight,
+      maxAbsHeight: Math.max(Math.abs(minHeight), Math.abs(maxHeight)),
+      byFace
     };
   }
 

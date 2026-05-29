@@ -22,13 +22,13 @@ You can also open `app/index.html` directly in a browser.
 
 - Rectangular speaker cabinet preview.
 - CAD-style coordinates: X width, Y depth, Z height, with the origin at the floor center and the bottom on `Z=0`.
-- Continuous wave relief across the active waved faces, with an optional flat bottom that keeps the base closed on `Z=0`.
+- Continuous wave relief across the active waved faces, with an optional flat bottom that keeps the contact surface closed on `Z=0` while lower wall relief curves inward near the floor.
 - Corner wrap control for smoother wave continuity around softened cabinet edges.
 - Unit selection for inches or millimeters.
 - Driver/source add/remove controls with selectable source chips and a focused source editor.
 - Advanced source controls for position, diameter, amplitude, wavelength, phase, and falloff.
 - Relief depth, flat-bottom, bias, normalization, preview resolution, export quality, and overlay controls.
-- Visual helpers for the origin, XYZ axes, outline box, floor grid, and live dimension guides.
+- Visual helpers for the origin, XYZ axes, outline box, floor grid, live dimension guides, and min/max relief analysis planes.
 - Orbit/pan/zoom 3D viewport using vendored Three.js files.
 - Browser downloads for `.wavecad.json`, `.obj`, `.stl`, smooth spline `.step`, and preview `.png`.
 - OBJ/STL/STEP exports use a separate output quality setting, so they can be higher resolution than the live preview.
@@ -58,7 +58,7 @@ Open:
 app/smoke-test.html
 ```
 
-It checks that the default project loads, mesh vertices are finite, rounded front/right seam heights match, the export mesh is higher resolution than the preview mesh, and OBJ/STL/STEP exporters produce text.
+It checks that the default project loads, mesh vertices are finite, rounded front/right seam heights match, flat-bottom floor relief behaves correctly, the export mesh is higher resolution than the preview mesh, and OBJ/STL/STEP exporters produce text.
 
 ## STEP Direction
 

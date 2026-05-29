@@ -38,7 +38,7 @@ Corner wrap is not a simple hard fillet. It progressively softens the vertical a
 
 Relief depth is clipped by the requested relief depth and by the cabinet wall thickness minus the configured minimum remaining wall. This keeps aggressive settings from previewing an impossible carve depth.
 
-When flat bottom is enabled, the bottom face receives zero wave displacement and the side relief blends to zero at the floor edge. The back, sides, front, and top still use the wave field above that small floor blend, but the base remains closed and planar for a real surface.
+When flat bottom is enabled, the bottom face receives zero wave displacement and the side relief is guarded at the floor. Positive outward relief near the floor transitions inward instead of creating an outward flange, while the exact contact surface stays closed and planar on `Z=0`.
 
 ## Units
 
@@ -46,7 +46,9 @@ Projects default to inches. Switching between inches and millimeters converts ca
 
 ## Preview Aids
 
-The viewer can draw an original-size outline box, RGB XYZ origin axes, a floor grid on `Z=0`, and live dimension guide lines. The width, depth, and height controls are keyed to those same axis colors so it is clear which model direction will change.
+The viewer can draw an original-size outline box, RGB XYZ origin axes, a floor grid on `Z=0`, live dimension guide lines, and relief analysis planes. The width, depth, and height controls are keyed to those same axis colors so it is clear which model direction will change.
+
+Analysis planes show the current min/max relief offsets around the cabinet, while the View Tools panel reports total deviation, max outward, max inward, and max absolute relief in the active units.
 
 Sources are edited through compact selectable chips plus one focused editor. Clicking a source marker in the preview also selects that source, so source changes do not require scrolling through every driver.
 
