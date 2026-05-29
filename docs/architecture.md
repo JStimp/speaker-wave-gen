@@ -30,6 +30,12 @@ Front-mounted sources use a cuboid-unfolding distance model. That keeps front-to
 
 Relief depth is clipped by the requested relief depth and by the cabinet wall thickness minus the configured minimum remaining wall. This keeps aggressive settings from previewing an impossible carve depth.
 
+When flat bottom is enabled, the bottom face receives zero wave displacement so the cabinet can sit on a real surface. The rest of the shell continues to use the same wave field.
+
+## Preview Aids
+
+The viewer can draw an original-size outline box, RGB XYZ origin axes, a floor grid, and live dimension guide lines. The width, height, and depth controls are keyed to those same axis colors so it is clear which model direction will change.
+
 ## Stability Boundary
 
 The active prototype has no Node, npm, Vite, Rollup, Electron, Python, Docker, or CAD-kernel dependency. STEP export is a future Docker tool and must not be required to preview the app.

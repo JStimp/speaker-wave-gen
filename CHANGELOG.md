@@ -9,6 +9,8 @@
 - Added vendored Three.js browser files and a local-file launcher.
 - Added continuous six-face cuboid wave relief with seam-matched front/side/top/bottom distance math.
 - Added side-panel controls for cabinet dimensions, wall limits, drivers, point sources, relief settings, preview resolution, and overlays.
+- Added flat-bottom geometry mode for a planar underside.
+- Added preview helpers for XYZ origin, outline box, floor grid, reset view, and dimension guides.
 - Added JSON, OBJ, STL, and PNG browser exports.
 - Added browser smoke test page.
 - Documented STEP as a separate future Docker exporter.

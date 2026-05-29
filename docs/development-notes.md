@@ -16,6 +16,8 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added browser geometry math for cuboid shell sampling, continuous wave relief, driver overlays, source overlays, and seam overlays.
 - Added relief limiting from wall thickness and minimum remaining wall settings.
 - Added side-panel controls to add/remove drivers and point sources.
+- Added a flat-bottom option that keeps the bottom face planar for real-world placement.
+- Added preview aids: outline box, XYZ origin axes, floor grid toggle, reset view, and dimension guide overlays tied to cabinet controls.
 - Added browser JSON, OBJ, STL, and PNG exports.
 - Added an example `default-speaker.wavecad.json` project.
 - Added a browser smoke test page.

@@ -29,12 +29,15 @@
         const dims = project.cabinet.dimensions;
         const front = WaveGeometry.pointOnFace("front", 1, 0.42, dims);
         const right = WaveGeometry.pointOnFace("right", 0, 0.42, dims);
+        const bottom = WaveGeometry.pointOnFace("bottom", 0.37, 0.62, dims);
         const frontHeight = WaveGeometry.computeWaveDisplacement(front, project).displacement;
         const rightHeight = WaveGeometry.computeWaveDisplacement(right, project).displacement;
+        const bottomHeight = WaveGeometry.computeWaveDisplacement(bottom, project).displacement;
 
         check("default project loads", project.project.name.length > 0);
         check("mesh has finite vertices", mesh.vertices.length > 0 && mesh.vertices.every(Number.isFinite));
         check("front/right seam heights match", Math.abs(frontHeight - rightHeight) < 1e-9);
+        check("flat bottom has zero wave displacement", Math.abs(bottomHeight) < 1e-12);
         check("OBJ exporter returns text", WaveExporters.meshToObj(mesh, "test").length > 100);
         check("STL exporter returns text", WaveExporters.meshToStl(mesh, "test").length > 100);
 
@@ -46,4 +49,3 @@
     </script>
   </body>
 </html>
-

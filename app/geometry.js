@@ -62,6 +62,7 @@
       normalization: "softClip",
       reliefDepth: 5.5,
       reliefBias: 0,
+      flatBottom: true,
       minThickness: 12
     },
     preview: {
@@ -70,6 +71,10 @@
       showDrivers: true,
       showSources: true,
       showPanels: true,
+      showOutline: true,
+      showAxes: true,
+      showDimensions: true,
+      showGrid: true,
       colorMode: "height"
     },
     panelization: {
@@ -230,6 +235,10 @@
     const dims = dimensions(project);
     const waves = project.waves;
     let raw = 0;
+
+    if (point.face === "bottom" && waves.flatBottom) {
+      return { raw: 0, displacement: 0 };
+    }
 
     collectSources(project).forEach((source) => {
       const distance = Math.max(0.0001, surfaceDistanceToSource(point, source, dims));

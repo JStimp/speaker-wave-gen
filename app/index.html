@@ -32,6 +32,7 @@
             <span>Orbit</span>
             <span>Pan</span>
             <span>Zoom</span>
+            <button id="reset-view" type="button">Reset View</button>
             <span id="mesh-stats">Ready</span>
           </div>
         </section>
@@ -45,9 +46,9 @@
           <section class="panel">
             <h2>Cabinet</h2>
             <div class="grid-2">
-              <label>Width <input data-path="cabinet.dimensions.width" type="number" step="1"></label>
-              <label>Height <input data-path="cabinet.dimensions.height" type="number" step="1"></label>
-              <label>Depth <input data-path="cabinet.dimensions.depth" type="number" step="1"></label>
+              <label><span><span class="axis-dot axis-x"></span>Width X</span><input data-path="cabinet.dimensions.width" data-dimension="x" type="number" step="1"></label>
+              <label><span><span class="axis-dot axis-y"></span>Height Y</span><input data-path="cabinet.dimensions.height" data-dimension="y" type="number" step="1"></label>
+              <label><span><span class="axis-dot axis-z"></span>Depth Z</span><input data-path="cabinet.dimensions.depth" data-dimension="z" type="number" step="1"></label>
               <label>Wall <input data-path="cabinet.dimensions.wallThickness" type="number" step="1"></label>
             </div>
           </section>
@@ -60,6 +61,7 @@
               <label>Bias <input data-path="waves.reliefBias" type="number" step="0.1"></label>
               <label>Min wall <input data-path="waves.minThickness" type="number" step="0.5"></label>
             </div>
+            <label class="check"><input data-path="waves.flatBottom" type="checkbox"> Flat bottom</label>
             <label>Normalization
               <select data-path="waves.normalization">
                 <option value="softClip">Soft clip</option>
@@ -90,7 +92,11 @@
           </section>
 
           <section class="panel">
-            <h2>Overlays</h2>
+            <h2>View Tools</h2>
+            <label class="check"><input data-path="preview.showOutline" type="checkbox"> Outline box</label>
+            <label class="check"><input data-path="preview.showAxes" type="checkbox"> XYZ origin</label>
+            <label class="check"><input data-path="preview.showDimensions" type="checkbox"> Dimension guides</label>
+            <label class="check"><input data-path="preview.showGrid" type="checkbox"> Floor grid</label>
             <label class="check"><input data-path="preview.showSeams" type="checkbox"> Seams</label>
             <label class="check"><input data-path="preview.showDrivers" type="checkbox"> Driver rings</label>
             <label class="check"><input data-path="preview.showSources" type="checkbox"> Source points</label>

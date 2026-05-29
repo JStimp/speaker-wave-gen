@@ -117,6 +117,14 @@ button:hover,
   background: rgba(17, 18, 16, 0.78);
 }
 
+.hud button {
+  min-height: 27px;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 12px;
+  background: rgba(36, 39, 32, 0.86);
+}
+
 .controls {
   min-height: 0;
   overflow: auto;
@@ -146,6 +154,30 @@ button:hover,
   color: #b8bfb0;
   font-size: 13px;
   margin-bottom: 10px;
+}
+
+.panel label span {
+  min-width: 0;
+}
+
+.axis-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  margin-right: 6px;
+}
+
+.axis-x {
+  background: #f05b4f;
+}
+
+.axis-y {
+  background: #54c46b;
+}
+
+.axis-z {
+  background: #4f8df0;
 }
 
 .grid-2 {

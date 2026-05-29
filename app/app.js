@@ -10,6 +10,8 @@
   let camera = null;
   let controls = null;
   let previewRoot = null;
+  let grid = null;
+  let activeDimension = null;
   let rebuildTimer = 0;
 
   window.addEventListener("DOMContentLoaded", init);
@@ -45,7 +47,7 @@
     fill.position.set(-700, -300, 500);
     scene.add(fill);
 
-    const grid = new THREE.GridHelper(1100, 22, 0x3b3d34, 0x252820);
+    grid = new THREE.GridHelper(1100, 22, 0x3b3d34, 0x252820);
     grid.position.y = -430;
     scene.add(grid);
 
@@ -60,6 +62,8 @@
       scheduleRebuild();
     });
 
+    document.getElementById("reset-view").addEventListener("click", resetView);
+
     document.querySelectorAll("[data-path]").forEach((input) => {
       input.addEventListener("input", () => {
         setPath(project, input.dataset.path, valueFromInput(input));
@@ -68,6 +72,17 @@
       input.addEventListener("change", () => {
         setPath(project, input.dataset.path, valueFromInput(input));
         scheduleRebuild();
+      });
+    });
+
+    document.querySelectorAll("[data-dimension]").forEach((input) => {
+      input.addEventListener("focus", () => {
+        activeDimension = input.dataset.dimension;
+        if (mesh) drawMesh(mesh);
+      });
+      input.addEventListener("blur", () => {
+        activeDimension = null;
+        if (mesh) drawMesh(mesh);
       });
     });
 
@@ -220,6 +235,15 @@
     }
 
     previewRoot = new THREE.Group();
+    const dims = project.cabinet.dimensions;
+
+    if (grid) {
+      grid.visible = project.preview.showGrid !== false;
+      grid.position.y = -dims.height / 2 - 50;
+    }
+    if (project.preview.showOutline) previewRoot.add(createOutlineBox(dims));
+    if (project.preview.showAxes) previewRoot.add(createAxes(dims));
+    if (project.preview.showDimensions) previewRoot.add(createDimensionGuides(dims));
     previewRoot.add(createSurface(nextMesh));
 
     if (project.preview.showPanels) previewRoot.add(createWire(nextMesh));
@@ -228,6 +252,140 @@
     if (project.preview.showSources) previewRoot.add(createSources(nextMesh.overlays.sources));
 
     scene.add(previewRoot);
+  }
+
+  function createOutlineBox(dims) {
+    const geometry = new THREE.BoxGeometry(dims.width, dims.height, dims.depth);
+    const edges = new THREE.EdgesGeometry(geometry);
+    geometry.dispose();
+    const material = new THREE.LineBasicMaterial({ color: 0xf4e3a0, transparent: true, opacity: 0.72 });
+    return new THREE.LineSegments(edges, material);
+  }
+
+  function createAxes(dims) {
+    const group = new THREE.Group();
+    const length = Math.max(dims.width, dims.height, dims.depth) * 0.38;
+    const originMaterial = new THREE.MeshStandardMaterial({ color: 0xf4f1df, emissive: 0x222018 });
+    const origin = new THREE.Mesh(new THREE.SphereGeometry(8, 20, 14), originMaterial);
+    group.add(origin);
+
+    group.add(createAxisArrow(new THREE.Vector3(1, 0, 0), length, 0xf05b4f, "X"));
+    group.add(createAxisArrow(new THREE.Vector3(0, 1, 0), length, 0x54c46b, "Y"));
+    group.add(createAxisArrow(new THREE.Vector3(0, 0, 1), length, 0x4f8df0, "Z"));
+    group.add(createLabelSprite("Origin", "#f4f1df", new THREE.Vector3(18, 18, 18), 66, 24));
+    return group;
+  }
+
+  function createAxisArrow(direction, length, color, label) {
+    const group = new THREE.Group();
+    const arrow = new THREE.ArrowHelper(direction, new THREE.Vector3(0, 0, 0), length, color, 24, 12);
+    const labelPosition = direction.clone().multiplyScalar(length + 28);
+    group.add(arrow);
+    group.add(createLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), labelPosition, 34, 34));
+    return group;
+  }
+
+  function createDimensionGuides(dims) {
+    const group = new THREE.Group();
+    const offset = 54;
+    const w = dims.width / 2;
+    const h = dims.height / 2;
+    const d = dims.depth / 2;
+    const y = -h - offset;
+    const z = d + offset;
+    const x = w + offset;
+    const leftX = -w - offset;
+
+    group.add(createDimensionLine(
+      new THREE.Vector3(-w, y, z),
+      new THREE.Vector3(w, y, z),
+      "X width " + fmtDimension(dims.width),
+      0xf05b4f,
+      activeDimension === "x"
+    ));
+    group.add(createDimensionLine(
+      new THREE.Vector3(leftX, -h, z),
+      new THREE.Vector3(leftX, h, z),
+      "Y height " + fmtDimension(dims.height),
+      0x54c46b,
+      activeDimension === "y"
+    ));
+    group.add(createDimensionLine(
+      new THREE.Vector3(x, y, -d),
+      new THREE.Vector3(x, y, d),
+      "Z depth " + fmtDimension(dims.depth),
+      0x4f8df0,
+      activeDimension === "z"
+    ));
+    return group;
+  }
+
+  function createDimensionLine(start, end, label, color, active) {
+    const group = new THREE.Group();
+    const direction = end.clone().sub(start).normalize();
+    const opacity = active ? 1 : 0.58;
+    const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+    const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+    group.add(new THREE.Line(geometry, material));
+    group.add(createGuideCone(end, direction, color, opacity));
+    group.add(createGuideCone(start, direction.clone().multiplyScalar(-1), color, opacity));
+
+    const midpoint = start.clone().lerp(end, 0.5);
+    const labelOffset = new THREE.Vector3(0, active ? 25 : 18, 0);
+    group.add(createLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), midpoint.add(labelOffset), active ? 118 : 104, 24));
+    return group;
+  }
+
+  function createGuideCone(position, direction, color, opacity) {
+    const geometry = new THREE.ConeGeometry(8, 20, 18);
+    const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity });
+    const cone = new THREE.Mesh(geometry, material);
+    cone.position.copy(position);
+    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize());
+    return cone;
+  }
+
+  function createLabelSprite(text, color, position, width, height) {
+    const canvas = document.createElement("canvas");
+    const scale = 2;
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext("2d");
+    ctx.scale(scale, scale);
+    ctx.font = "600 13px Segoe UI, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "rgba(17, 18, 16, 0.72)";
+    roundRect(ctx, 1, 1, width - 2, height - 2, 8);
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.9;
+    roundRect(ctx, 1.5, 1.5, width - 3, height - 3, 8);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = color;
+    ctx.fillText(text, width / 2, height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+    const sprite = new THREE.Sprite(material);
+    sprite.position.copy(position);
+    sprite.scale.set(width, height, 1);
+    return sprite;
+  }
+
+  function roundRect(ctx, x, y, width, height, radius) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
   }
 
   function createSurface(nextMesh) {
@@ -318,10 +476,15 @@
     object.traverse((child) => {
       if (child.geometry) child.geometry.dispose();
       if (child.material) {
-        if (Array.isArray(child.material)) child.material.forEach((material) => material.dispose());
-        else child.material.dispose();
+        if (Array.isArray(child.material)) child.material.forEach(disposeMaterial);
+        else disposeMaterial(child.material);
       }
     });
+  }
+
+  function disposeMaterial(material) {
+    if (material.map) material.map.dispose();
+    material.dispose();
   }
 
   function updateStats() {
@@ -344,6 +507,14 @@
     requestAnimationFrame(animate);
     controls.update();
     renderer.render(scene, camera);
+  }
+
+  function resetView() {
+    const dims = project.cabinet.dimensions;
+    const span = Math.max(dims.width, dims.height, dims.depth);
+    camera.position.set(span * 0.95, span * 0.74, span * 1.08);
+    controls.target.set(0, 0, 0);
+    controls.update();
   }
 
   function saveScreenshot() {
@@ -396,5 +567,9 @@
       '"': "&quot;",
       "'": "&#039;"
     }[character]));
+  }
+
+  function fmtDimension(value) {
+    return Number(value).toLocaleString(undefined, { maximumFractionDigits: 1 }) + " mm";
   }
 }());

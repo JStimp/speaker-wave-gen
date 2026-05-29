@@ -50,6 +50,7 @@
     "normalization": "softClip",
     "reliefDepth": 5.5,
     "reliefBias": 0,
+    "flatBottom": true,
     "minThickness": 12
   },
   "preview": {
@@ -58,6 +59,10 @@
     "showDrivers": true,
     "showSources": true,
     "showPanels": true,
+    "showOutline": true,
+    "showAxes": true,
+    "showDimensions": true,
+    "showGrid": true,
     "colorMode": "height"
   },
   "panelization": {
