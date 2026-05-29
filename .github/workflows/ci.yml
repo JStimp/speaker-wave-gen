@@ -7,34 +7,27 @@ on:
     branches: [main, experimental]
 
 jobs:
-  core-and-exporter:
+  static-prototype:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: npm install
-      - run: npm test
-
-  desktop-build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm install
-      - run: npm --workspace @speaker-wave-gen/desktop run build
-
-  docker-exporter:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: docker build -f exporter/Dockerfile -t speaker-wave-exporter .
-      - run: docker run --rm -v "${{ github.workspace }}:/work" speaker-wave-exporter --config /work/examples/default-speaker.wavecad.json --out /work/exports --format all --panel-mode separated
-      - run: test -f exports/export_report.json
-
+      - name: Verify static app files
+        run: |
+          test -f Launch-WaveGen3D.bat
+          test -f app/index.html
+          test -f app/app.js
+          test -f app/geometry.js
+          test -f app/exporters.js
+          test -f app/vendor/three.min.js
+          test -f app/vendor/OrbitControls.js
+          test -f app/smoke-test.html
+      - name: Verify dependency-free prototype
+        run: |
+          test ! -f package.json
+          test ! -d apps
+          test ! -d packages
+          test ! -d node_modules
+          test ! -f package-lock.json
+      - name: Check no active npm/Electron launch path
+        run: |
+          ! grep -R "npm install\|electron \.|vite --host" Launch-WaveGen3D.bat app README.md docs examples

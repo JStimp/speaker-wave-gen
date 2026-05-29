@@ -6,20 +6,13 @@
     "notes": "Starter project for the V2 3D wave CAD generator."
   },
   "cabinet": {
-    "mode": "preset",
     "preset": "rectangular",
     "dimensions": {
       "width": 520,
       "height": 760,
       "depth": 340,
-      "wallThickness": 19,
-      "edgeRadius": 8
-    },
-    "material": {
-      "name": "hardwood",
-      "thickness": 19
-    },
-    "import": null
+      "wallThickness": 19
+    }
   },
   "drivers": [
     {
@@ -57,14 +50,14 @@
     "normalization": "softClip",
     "reliefDepth": 5.5,
     "reliefBias": 0,
-    "minThickness": 12,
-    "smoothing": 0.35
+    "minThickness": 12
   },
   "preview": {
     "resolution": "medium",
     "showSeams": true,
     "showDrivers": true,
     "showSources": true,
+    "showPanels": true,
     "colorMode": "height"
   },
   "panelization": {
@@ -75,10 +68,7 @@
     "edgeAllowance": 2
   },
   "export": {
-    "formats": ["step", "stl", "obj"],
-    "stepMode": "solidAndPanels",
-    "meshTolerance": 0.25,
-    "outputDirectory": "exports"
+    "formats": ["json", "obj", "stl"],
+    "stepMode": "plannedDockerExporter"
   }
 }
-

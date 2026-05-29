@@ -2,24 +2,24 @@
 
 ## Unreleased
 
-- Changed source-code launch to browser UI mode by default, avoiding Electron binary installs during normal testing.
-- Moved Electron, Electron Builder, and Electron dev helpers into optional dependencies so normal source installs use a smaller dependency set.
-- Updated portable source bundle creation to omit optional Electron packaging dependencies.
-- Changed Windows packaging workflows to manual-only so failed experimental package builds do not spam GitHub notifications on every push.
-- Added Windows packaged-app build support through `electron-builder` so end users can run a portable executable without installing Node.js.
-- Added a GitHub Actions workflow that uploads a packaged Windows portable executable.
-- Updated packaged-app resource resolution so exporter scripts can be found from an Electron build.
-- Changed Electron user data/cache to live beside the app for portable testing instead of relying on global AppData locations.
-- Added a portable Windows bundle workflow so WaveGen3D can be distributed as a zip with portable Node.js and dependencies included.
-- Added `Launch-WaveGen3D.bat` and Windows launcher scripts for double-click startup.
-- Improved the launcher to download portable Node.js when Node is missing.
-- Improved the launcher to detect and repair incomplete Electron installs.
-- Improved Electron repair to run npm lifecycle scripts and Electron's binary installer directly when needed.
-- Pinned source-mode launcher setup to portable Node.js 20 and stopped using global Node 24 by default.
-- Added browser preview fallback when Electron's binary install is blocked in source mode.
-- Added CI for core tests, exporter tests, desktop build, Docker exporter build, and portable Windows bundle creation.
-- Added the V2 app scaffold: Electron, React, Three.js viewport, shared geometry core, Python exporter, docs, and sample project file.
-- Replaced the v1 2D surface prototype files with the new 3D cabinet-shell architecture.
+### Static Prototype Rebuild
+
+- Rebuilt the active prototype as a dependency-free static browser app.
+- Removed Node/npm/Vite/Rollup/Electron from the normal launch path.
+- Added vendored Three.js browser files and a local-file launcher.
+- Added continuous six-face cuboid wave relief with seam-matched front/side/top/bottom distance math.
+- Added side-panel controls for cabinet dimensions, wall limits, drivers, point sources, relief settings, preview resolution, and overlays.
+- Added JSON, OBJ, STL, and PNG browser exports.
+- Added browser smoke test page.
+- Documented STEP as a separate future Docker exporter.
+- Reduced CI to static checks only.
+
+### Retired Prototype Tracks
+
+- Removed the Electron/React/Vite desktop shell from the active path.
+- Removed automatic Windows packaged-app workflows during early development.
+- Removed the Python/Docker STEP exporter implementation from normal launch; STEP is now a documented future tool.
+- Retired portable Node/npm launcher repair logic because the prototype no longer needs package installation.
 
 ## 0.1.0 - 2026-05-28
 

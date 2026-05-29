@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>WaveGen3D Smoke Test</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 32px; }
+      .pass { color: #1f7a3f; }
+      .fail { color: #a32020; }
+    </style>
+  </head>
+  <body>
+    <h1>WaveGen3D Smoke Test</h1>
+    <pre id="results"></pre>
+    <script src="geometry.js"></script>
+    <script src="exporters.js"></script>
+    <script>
+      (function () {
+        const lines = [];
+        let failed = false;
+
+        function check(label, condition) {
+          if (!condition) failed = true;
+          lines.push((condition ? "PASS " : "FAIL ") + label);
+        }
+
+        const project = WaveGeometry.createDefaultProject();
+        const mesh = WaveGeometry.generatePreviewMesh(project, { resolution: "draft" });
+        const dims = project.cabinet.dimensions;
+        const front = WaveGeometry.pointOnFace("front", 1, 0.42, dims);
+        const right = WaveGeometry.pointOnFace("right", 0, 0.42, dims);
+        const frontHeight = WaveGeometry.computeWaveDisplacement(front, project).displacement;
+        const rightHeight = WaveGeometry.computeWaveDisplacement(right, project).displacement;
+
+        check("default project loads", project.project.name.length > 0);
+        check("mesh has finite vertices", mesh.vertices.length > 0 && mesh.vertices.every(Number.isFinite));
+        check("front/right seam heights match", Math.abs(frontHeight - rightHeight) < 1e-9);
+        check("OBJ exporter returns text", WaveExporters.meshToObj(mesh, "test").length > 100);
+        check("STL exporter returns text", WaveExporters.meshToStl(mesh, "test").length > 100);
+
+        const results = document.getElementById("results");
+        results.textContent = lines.join("\n");
+        results.className = failed ? "fail" : "pass";
+        document.title = failed ? "Smoke Test Failed" : "Smoke Test Passed";
+      }());
+    </script>
+  </body>
+</html>
+

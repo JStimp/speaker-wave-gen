@@ -1,36 +1,20 @@
 # CAD Export Notes
 
-## Preferred workflow
+## Current Prototype
 
-```text
-.wavecad.json
-  -> Linux exporter
-  -> full cabinet STEP
-  -> separated panel STEP files
-  -> SolidWorks or Mastercam
-```
+The static app exports:
 
-STEP is the primary target because it preserves topology better than STL and is more reliable for SolidWorks/Mastercam workflows.
+- `.wavecad.json`
+- `.obj`
+- `.stl`
+- `.png` preview screenshot
 
-## Fallback workflow
+OBJ and STL are mesh exports for inspection and rough CAM experiments. They are not editable CAD surfaces.
 
-When OpenCascade/OCP is unavailable, the exporter still writes:
+## STEP
 
-- preview mesh JSON
-- cabinet OBJ
-- cabinet STL
-- separated panel OBJ/STL files
-- export report with warnings
+STEP is not generated in the static prototype. Real STEP output needs a CAD kernel and belongs in a separate Docker exporter. See [STEP exporter plan](step-exporter-plan.md).
 
-These mesh outputs are useful for preview and fit checks, but they are not a replacement for editable CAD surfaces.
+## Panel Strategy
 
-## Panel strategy
-
-The core surface is generated first. Panels are derived from face samples after wave evaluation, so shared edges receive the same relief height. This avoids the v1 problem where independently generated panels did not meet visually at corners.
-
-## Imported geometry
-
-- STEP imports are the preferred route for editable CAD bodies.
-- STL imports are supported as reference/preview geometry first.
-- Complex STL-to-STEP reconstruction is explicitly treated as a later capability because clean CAD surfaces matter more than mesh conversion.
-
+The surface is generated as a full cuboid shell first. Panels can be derived later from face samples, which preserves matched relief along shared edges.

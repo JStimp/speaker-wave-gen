@@ -22,5 +22,3 @@ exports/
 *.stp
 *.iges
 *.igs
-*.stl
-*.obj

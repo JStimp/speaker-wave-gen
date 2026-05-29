@@ -4,58 +4,43 @@ This file tracks the practical work being done in the repo so the project has a 
 
 ## Current Direction
 
-- Build a desktop CAD-style app for configuring a speaker enclosure with continuous 3D wave-interference relief.
-- Treat the cabinet as a full 3D shell first, then derive routable panels from that shared surface so corner boundaries match.
-- Keep the Windows GUI independent of OpenCascade/OCP because the v1 handoff identified native CAD DLL blocking on Windows.
-- Use Docker/WSL Linux for STEP export and keep STL/OBJ as preview or fallback formats.
-- Prefer a portable Windows Electron executable for end users and testing; use the source launcher only for development or debugging.
-- Source-code launch should use the browser UI by default to avoid Electron binary install failures on developer/test machines.
+- Build a static browser prototype for configuring a rectangular speaker enclosure with continuous 3D wave-interference relief.
+- Treat the cabinet as a full 3D shell first, then derive routable panels later from that shared surface so corner boundaries match.
+- Keep preview launch independent of OpenCascade/OCP, Docker, Python, Node, npm, Vite, Rollup, and Electron.
+- Use Docker later only for STEP export.
 
 ## Implemented So Far
 
-- Created the Electron + React + Three.js desktop shell.
-- Created a shared JavaScript core package for schema defaults, validation, wave math, cabinet face sampling, preview mesh generation, driver overlays, and seam overlays.
-- Created a Python exporter that mirrors the core mesh generation and writes preview JSON, OBJ, STL, panel exports, and STEP through OCP when available.
+- Created a static browser app in `app/`.
+- Vendored browser-global Three.js and OrbitControls files.
+- Added browser geometry math for cuboid shell sampling, continuous wave relief, driver overlays, source overlays, and seam overlays.
+- Added relief limiting from wall thickness and minimum remaining wall settings.
+- Added side-panel controls to add/remove drivers and point sources.
+- Added browser JSON, OBJ, STL, and PNG exports.
 - Added an example `default-speaker.wavecad.json` project.
-- Added GitHub Actions for tests, desktop build, Docker exporter build, and portable Windows bundle generation.
-- Added a Windows launcher that can install portable Node.js, install npm dependencies, and repair a broken Electron install.
-- Added Electron Builder packaging so CI can produce a portable Windows executable that does not require Node/npm on the target PC.
-- Configured Electron user data/cache to stay beside the app, making version swaps and cleanup folder-based.
-- Moved Electron and packaging dependencies behind optional installs so normal browser source launch has fewer transient packages and avoids Electron install scripts.
+- Added a browser smoke test page.
+- Reduced CI to static file and dependency-free checks.
 
 ## Launcher Behavior
 
-- `Launch-WaveGen3D.bat` calls `scripts/launch-windows.ps1`.
-- The launcher first looks for a bundled `.runtime/node-*-win-*` folder.
-- Source-mode launch is pinned to Node.js 20 because CI uses Node 20 and Electron install scripts are less fragile there than under newer global Node/npm pairs.
-- If no Node 20 runtime exists, it downloads portable Node.js 20 into `.runtime/`.
-- If Node 20 setup fails, it can fall back to system Node/npm, but that path is less preferred.
-- It installs browser UI dependencies when `node_modules/` is missing, omitting optional Electron packaging dependencies.
-- It starts Vite browser mode instead of source-mode Electron.
+- `Launch-WaveGen3D.bat` opens `app/index.html`.
+- There is no install or setup step.
+- The app can also be opened by double-clicking `app/index.html`.
 
 ## Packaging Direction
 
-- Node/npm are build tools for the current Electron/React stack.
-- End users should use the packaged Windows executable from the **Windows Packaged App** GitHub Action.
-- The packaged app embeds the Electron runtime, so the target PC does not need a separate Node.js install.
-- The packaged app should stay portable during testing. Avoid installer targets until the app is stable.
-- Runtime user data should live in `WaveGen3D-user-data/` beside the app, so deleting the test folder removes local app state.
-- The source launcher remains useful when working from a Git clone, but it is not the final distribution format.
-- The most stable stack for this project remains React/Three.js plus packaged Electron for the GUI, with Docker/WSL reserved for CAD export.
-- The deprecated `inflight` warning came from transitive Electron/build tooling, not the app's runtime code. Normal source launch now omits that dependency path.
-- Windows package workflows are manual-only during early development; run them from GitHub Actions when a portable artifact is actually needed.
+- Current packaging is just the repo folder itself.
+- Do not add npm/Electron packaging until the static prototype proves the geometry and workflow.
+- If a packaged desktop app is needed later, build it as a separate track rather than as the default launch path.
 
 ## Known Limits
 
-- The source-code launch path still needs internet on first setup unless using the portable zip artifact.
-- The current GUI is a usable scaffold, not a finished CAD product.
-- Built-in rectangular cabinet geometry is the first fully implemented shape; other presets are schema placeholders.
-- STEP export depends on the Docker/WSL Linux exporter having OCP/OpenCascade available.
-- Imported STEP/STL cabinet support is planned in the schema and architecture, but not finished as a production workflow.
+- Rectangular cabinet only.
+- Browser file dialogs use upload/download controls.
+- OBJ/STL are mesh exports, not editable CAD surfaces.
+- STEP export is planned as a separate Docker tool, not part of the static prototype.
 
 ## Verification Run By Codex
 
-- PowerShell syntax checks for launcher scripts.
-- Node core tests for schema and mesh seam continuity.
-- Python exporter tests for geometry and fallback outputs.
-- Exporter dry runs with the bundled Codex Python runtime.
+- Static smoke test page was added for browser-side checks.
+- Old npm/Electron/Python checks are intentionally removed from the active prototype path.

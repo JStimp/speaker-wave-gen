@@ -2,37 +2,34 @@
 
 ## Goals
 
-The generator is built around a true 3D enclosure model. The UI edits speaker-box parameters, the core package generates a continuous relief field over the cabinet shell, and the exporter turns the project into CAD/CAM-friendly artifacts.
+WaveGen3D is a static browser prototype. The first priority is a stable app that opens from a cloned folder without installing anything.
 
-The v1 project generated 2D panel surfaces. V2 intentionally changes the architecture so the surface field is evaluated before panel splitting. That means the same wave function drives the front, sides, top, bottom, and back, and panel boundaries inherit matching relief values.
+## Major Systems
 
-## Major systems
+- Static browser UI in `app/`.
+- Vendored Three.js files in `app/vendor/`.
+- Browser-side geometry math in `app/geometry.js`.
+- Browser-side JSON/OBJ/STL exporters in `app/exporters.js`.
+- Future STEP export documented separately in `docs/step-exporter-plan.md`.
 
-- Desktop shell: Electron hosts a React app with a Three.js viewport.
-- Shared core: project schema, defaults, shape presets, source handling, wave math, and preview mesh generation.
-- Exporter: Python CLI designed to run under Docker/WSL Linux for OpenCascade/OCP-based STEP generation.
-- Project files: versioned `*.wavecad.json` files are the durable interface between UI, tests, and exporter.
-
-## Data flow
+## Data Flow
 
 ```text
-User edits parameters
-  -> React state validates through shared schema
-  -> Core builds preview mesh and overlays
-  -> Electron backend saves/loads project files
-  -> Export job sends project JSON to Docker/WSL exporter
-  -> Exporter writes STEP/STL/OBJ/report artifacts
+User edits controls
+  -> project object updates in memory
+  -> geometry mesh rebuilds in the browser
+  -> Three.js preview redraws
+  -> user downloads JSON, OBJ, STL, or PNG
 ```
 
-## Geometry model
+## Geometry Model
 
-The first release treats built-in cabinets as shell presets. A rectangular enclosure is implemented first because it gives predictable panels and clear CNC behavior. Wedge, rounded, and curved presets are schema-supported and reserved for the next geometry pass.
+The prototype supports a rectangular enclosure. The wave field is evaluated on the full cuboid shell before any panel thinking, so shared edges use the same relief height.
 
-Wave sources are driver-based by default. Driver centers are placed on the baffle and converted into source definitions. Manual extra sources can be added to bias the pattern.
+Front-mounted sources use a cuboid-unfolding distance model. That keeps front-to-side, front-to-top, and front-to-bottom seams visually continuous.
 
-The current core evaluates surface distances for front-mounted driver sources with a cuboid unfolding model. That gives continuous values along front-to-side, front-to-top, and front-to-bottom seams. Imported CAD bodies will use a sampled mesh surface path in later iterations.
+Relief depth is clipped by the requested relief depth and by the cabinet wall thickness minus the configured minimum remaining wall. This keeps aggressive settings from previewing an impossible carve depth.
 
-## Windows CAD-kernel boundary
+## Stability Boundary
 
-The Windows desktop app does not import OCP, OpenCascade, CadQuery, or pythonOCC. The handoff identified Windows Application Control blocking native CAD DLLs, so native CAD generation lives in the Linux exporter only.
-
+The active prototype has no Node, npm, Vite, Rollup, Electron, Python, Docker, or CAD-kernel dependency. STEP export is a future Docker tool and must not be required to preview the app.
