@@ -9,9 +9,9 @@ The static app exports:
 - `.stl`
 - `.png` preview screenshot
 
-OBJ and STL are mesh exports for inspection and rough CAM experiments. They are not editable CAD surfaces.
+OBJ and STL are mesh exports for inspection and rough CAM experiments. They are not editable CAD surfaces. Mesh coordinates use the selected project units.
 
-The exported mesh follows the current preview settings that affect geometry, including the flat-bottom option.
+The exported mesh follows the current preview settings that affect geometry, including the flat-bottom option. In flat-bottom mode, the bottom surface stays on `Z=0`.
 
 ## STEP
 

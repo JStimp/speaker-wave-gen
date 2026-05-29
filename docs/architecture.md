@@ -24,17 +24,27 @@ User edits controls
 
 ## Geometry Model
 
-The prototype supports a rectangular enclosure. The wave field is evaluated on the full cuboid shell before any panel thinking, so shared edges use the same relief height.
+The prototype supports a rectangular enclosure. Coordinates follow a CAD-style floor origin:
 
-Front-mounted sources use a cuboid-unfolding distance model. That keeps front-to-side, front-to-top, and front-to-bottom seams visually continuous.
+- X is cabinet width, centered on the origin.
+- Y is cabinet depth, centered on the origin.
+- Z is cabinet height, with the bottom surface on `Z=0`.
+
+The wave field is evaluated on the full cuboid shell before any panel thinking, so shared edges use the same relief height.
+
+Front-mounted sources use a cuboid-unfolding distance model. That keeps front-to-side, front-to-top, and, when flat-bottom mode is off, front-to-bottom seams visually continuous.
 
 Relief depth is clipped by the requested relief depth and by the cabinet wall thickness minus the configured minimum remaining wall. This keeps aggressive settings from previewing an impossible carve depth.
 
-When flat bottom is enabled, the bottom face receives zero wave displacement so the cabinet can sit on a real surface. The rest of the shell continues to use the same wave field.
+When flat bottom is enabled, only the bottom face receives zero wave displacement so the cabinet can sit on a real surface. The back, sides, front, and top continue to use the wave field.
+
+## Units
+
+Projects default to inches. Switching between inches and millimeters converts cabinet dimensions, driver/source lengths, wave lengths, relief depths, and falloff values so the design keeps the same physical size.
 
 ## Preview Aids
 
-The viewer can draw an original-size outline box, RGB XYZ origin axes, a floor grid, and live dimension guide lines. The width, height, and depth controls are keyed to those same axis colors so it is clear which model direction will change.
+The viewer can draw an original-size outline box, RGB XYZ origin axes, a floor grid on `Z=0`, and live dimension guide lines. The width, depth, and height controls are keyed to those same axis colors so it is clear which model direction will change.
 
 ## Stability Boundary
 

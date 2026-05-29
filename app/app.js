@@ -3,6 +3,7 @@
 
   const Geometry = window.WaveGeometry;
   const Exporters = window.WaveExporters;
+  const UNIT_LABELS = { in: "in", mm: "mm" };
   let project = Geometry.createDefaultProject();
   let mesh = null;
   let renderer = null;
@@ -29,7 +30,8 @@
     scene.background = new THREE.Color(0x10120f);
 
     camera = new THREE.PerspectiveCamera(38, 1, 1, 6000);
-    camera.position.set(720, 560, 820);
+    camera.up.set(0, 0, 1);
+    camera.position.set(28, -34, 24);
 
     renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -37,7 +39,7 @@
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.target.set(0, 0, 0);
+    controls.target.set(0, 0, project.cabinet.dimensions.height / 2);
 
     scene.add(new THREE.AmbientLight(0xf3f1df, 1.2));
     const key = new THREE.DirectionalLight(0xffffff, 1.9);
@@ -48,7 +50,8 @@
     scene.add(fill);
 
     grid = new THREE.GridHelper(1100, 22, 0x3b3d34, 0x252820);
-    grid.position.y = -430;
+    grid.rotation.x = Math.PI / 2;
+    grid.position.z = 0;
     scene.add(grid);
 
     window.addEventListener("resize", resize);
@@ -60,6 +63,17 @@
     document.getElementById("project-name").addEventListener("input", (event) => {
       project.project.name = event.target.value;
       scheduleRebuild();
+    });
+
+    document.getElementById("unit-select").addEventListener("change", (event) => {
+      const nextUnits = event.target.value;
+      const currentUnits = project.units || "in";
+      if (nextUnits !== currentUnits) {
+        convertProjectUnits(project, currentUnits, nextUnits);
+        project.units = nextUnits;
+        syncForm();
+        rebuild();
+      }
     });
 
     document.getElementById("reset-view").addEventListener("click", resetView);
@@ -92,14 +106,14 @@
         id: "driver-" + count,
         label: "Driver " + count,
         face: "front",
-        center: { x: 0, y: 0 },
-        diameter: 140,
+        center: { x: 0, z: project.cabinet.dimensions.height / 2 },
+        diameter: lengthValue(5.5),
         source: {
           enabled: true,
-          amplitude: 2.5,
-          wavelength: 95,
+          amplitude: lengthValue(0.1),
+          wavelength: lengthValue(3.75),
           phase: 0,
-          falloff: 0.0018
+          falloff: falloffValue(0.046)
         }
       });
       renderSources();
@@ -113,11 +127,11 @@
         label: "Point source",
         face: "front",
         enabled: true,
-        center: { x: 0, y: 0 },
-        amplitude: 1.5,
-        wavelength: 100,
+        center: { x: 0, z: project.cabinet.dimensions.height / 2 },
+        amplitude: lengthValue(0.06),
+        wavelength: lengthValue(4),
         phase: 0,
-        falloff: 0.0015
+        falloff: falloffValue(0.038)
       });
       renderSources();
       scheduleRebuild();
@@ -132,6 +146,7 @@
 
   function syncForm() {
     document.getElementById("project-name").value = project.project.name;
+    document.getElementById("unit-select").value = project.units || "in";
     document.querySelectorAll("[data-path]").forEach((input) => {
       const value = getPath(project, input.dataset.path);
       if (input.type === "checkbox") input.checked = Boolean(value);
@@ -180,11 +195,11 @@
       '<label class="check"><input data-source-field="enabled" data-source-type="' + type + '" data-index="' + index + '" type="checkbox" ' + (source.enabled !== false ? "checked" : "") + '> Enabled</label>',
       '<div class="grid-2">',
       textField("Name", "label", label, type, index),
-      field("X", "x", center.x, type, index, 1),
-      field("Y", "y", center.y, type, index, 1),
-      type === "driver" ? field("Diameter", "diameter", item.diameter, type, index, 1) : "",
-      field("Amplitude", "amplitude", source.amplitude, type, index, 0.1),
-      field("Wavelength", "wavelength", source.wavelength, type, index, 1),
+      field("X", "x", center.x, type, index, lengthStep()),
+      field("Z height", "z", center.z, type, index, lengthStep()),
+      type === "driver" ? field("Diameter", "diameter", item.diameter, type, index, lengthStep()) : "",
+      field("Amplitude", "amplitude", source.amplitude, type, index, smallLengthStep()),
+      field("Wavelength", "wavelength", source.wavelength, type, index, lengthStep()),
       field("Phase", "phase", source.phase, type, index, 0.1),
       field("Falloff", "falloff", source.falloff, type, index, 0.0001),
       "</div>"
@@ -209,7 +224,7 @@
 
     if (fieldName === "label") item.label = value;
     else if (fieldName === "enabled") source.enabled = value;
-    else if (fieldName === "x" || fieldName === "y") item.center[fieldName] = value;
+    else if (fieldName === "x" || fieldName === "z") item.center[fieldName] = value;
     else if (fieldName === "diameter") item.diameter = value;
     else source[fieldName] = value;
 
@@ -239,7 +254,9 @@
 
     if (grid) {
       grid.visible = project.preview.showGrid !== false;
-      grid.position.y = -dims.height / 2 - 50;
+      const gridSpan = Math.max(dims.width, dims.depth) * 1.8;
+      grid.scale.setScalar(gridSpan / 1100);
+      grid.position.z = 0;
     }
     if (project.preview.showOutline) previewRoot.add(createOutlineBox(dims));
     if (project.preview.showAxes) previewRoot.add(createAxes(dims));
@@ -255,89 +272,95 @@
   }
 
   function createOutlineBox(dims) {
-    const geometry = new THREE.BoxGeometry(dims.width, dims.height, dims.depth);
+    const geometry = new THREE.BoxGeometry(dims.width, dims.depth, dims.height);
     const edges = new THREE.EdgesGeometry(geometry);
     geometry.dispose();
     const material = new THREE.LineBasicMaterial({ color: 0xf4e3a0, transparent: true, opacity: 0.72 });
-    return new THREE.LineSegments(edges, material);
+    const box = new THREE.LineSegments(edges, material);
+    box.position.z = dims.height / 2;
+    return box;
   }
 
   function createAxes(dims) {
     const group = new THREE.Group();
+    const scale = visualScale(dims);
     const length = Math.max(dims.width, dims.height, dims.depth) * 0.38;
     const originMaterial = new THREE.MeshStandardMaterial({ color: 0xf4f1df, emissive: 0x222018 });
-    const origin = new THREE.Mesh(new THREE.SphereGeometry(8, 20, 14), originMaterial);
+    const origin = new THREE.Mesh(new THREE.SphereGeometry(scale * 0.08, 20, 14), originMaterial);
     group.add(origin);
 
-    group.add(createAxisArrow(new THREE.Vector3(1, 0, 0), length, 0xf05b4f, "X"));
-    group.add(createAxisArrow(new THREE.Vector3(0, 1, 0), length, 0x54c46b, "Y"));
-    group.add(createAxisArrow(new THREE.Vector3(0, 0, 1), length, 0x4f8df0, "Z"));
-    group.add(createLabelSprite("Origin", "#f4f1df", new THREE.Vector3(18, 18, 18), 66, 24));
+    group.add(createAxisArrow(new THREE.Vector3(1, 0, 0), length, 0xf05b4f, "X", scale));
+    group.add(createAxisArrow(new THREE.Vector3(0, 1, 0), length, 0x54c46b, "Y", scale));
+    group.add(createAxisArrow(new THREE.Vector3(0, 0, 1), length, 0x4f8df0, "Z", scale));
+    group.add(createLabelSprite("Origin", "#f4f1df", new THREE.Vector3(scale * 0.18, scale * 0.18, scale * 0.18), scale * 0.72, scale * 0.24));
     return group;
   }
 
-  function createAxisArrow(direction, length, color, label) {
+  function createAxisArrow(direction, length, color, label, scale) {
     const group = new THREE.Group();
-    const arrow = new THREE.ArrowHelper(direction, new THREE.Vector3(0, 0, 0), length, color, 24, 12);
-    const labelPosition = direction.clone().multiplyScalar(length + 28);
+    const arrow = new THREE.ArrowHelper(direction, new THREE.Vector3(0, 0, 0), length, color, scale * 0.24, scale * 0.12);
+    const labelPosition = direction.clone().multiplyScalar(length + scale * 0.28);
     group.add(arrow);
-    group.add(createLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), labelPosition, 34, 34));
+    group.add(createLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), labelPosition, scale * 0.34, scale * 0.34));
     return group;
   }
 
   function createDimensionGuides(dims) {
     const group = new THREE.Group();
-    const offset = 54;
+    const scale = visualScale(dims);
+    const offset = scale * 0.54;
     const w = dims.width / 2;
-    const h = dims.height / 2;
     const d = dims.depth / 2;
-    const y = -h - offset;
-    const z = d + offset;
+    const h = dims.height;
+    const y = -d - offset;
     const x = w + offset;
     const leftX = -w - offset;
 
     group.add(createDimensionLine(
-      new THREE.Vector3(-w, y, z),
-      new THREE.Vector3(w, y, z),
+      new THREE.Vector3(-w, y, 0),
+      new THREE.Vector3(w, y, 0),
       "X width " + fmtDimension(dims.width),
       0xf05b4f,
-      activeDimension === "x"
+      activeDimension === "x",
+      scale
     ));
     group.add(createDimensionLine(
-      new THREE.Vector3(leftX, -h, z),
-      new THREE.Vector3(leftX, h, z),
-      "Y height " + fmtDimension(dims.height),
+      new THREE.Vector3(x, -d, 0),
+      new THREE.Vector3(x, d, 0),
+      "Y depth " + fmtDimension(dims.depth),
       0x54c46b,
-      activeDimension === "y"
+      activeDimension === "y",
+      scale
     ));
     group.add(createDimensionLine(
-      new THREE.Vector3(x, y, -d),
-      new THREE.Vector3(x, y, d),
-      "Z depth " + fmtDimension(dims.depth),
+      new THREE.Vector3(leftX, d + offset, 0),
+      new THREE.Vector3(leftX, d + offset, h),
+      "Z height " + fmtDimension(dims.height),
       0x4f8df0,
-      activeDimension === "z"
+      activeDimension === "z",
+      scale
     ));
     return group;
   }
 
-  function createDimensionLine(start, end, label, color, active) {
+  function createDimensionLine(start, end, label, color, active, scale) {
     const group = new THREE.Group();
     const direction = end.clone().sub(start).normalize();
     const opacity = active ? 1 : 0.58;
     const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
     const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
     group.add(new THREE.Line(geometry, material));
-    group.add(createGuideCone(end, direction, color, opacity));
-    group.add(createGuideCone(start, direction.clone().multiplyScalar(-1), color, opacity));
+    group.add(createGuideCone(end, direction, color, opacity, scale));
+    group.add(createGuideCone(start, direction.clone().multiplyScalar(-1), color, opacity, scale));
 
     const midpoint = start.clone().lerp(end, 0.5);
-    const labelOffset = new THREE.Vector3(0, active ? 25 : 18, 0);
-    group.add(createLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), midpoint.add(labelOffset), active ? 118 : 104, 24));
+    const labelOffset = new THREE.Vector3(0, 0, active ? scale * 0.25 : scale * 0.18);
+    group.add(createLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), midpoint.add(labelOffset), active ? scale * 1.28 : scale * 1.16, scale * 0.25));
     return group;
   }
 
-  function createGuideCone(position, direction, color, opacity) {
-    const geometry = new THREE.ConeGeometry(8, 20, 18);
+  function createGuideCone(position, direction, color, opacity, scale) {
+    const geometry = new THREE.ConeGeometry(scale * 0.08, scale * 0.2, 18);
     const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity });
     const cone = new THREE.Mesh(geometry, material);
     cone.position.copy(position);
@@ -347,24 +370,24 @@
 
   function createLabelSprite(text, color, position, width, height) {
     const canvas = document.createElement("canvas");
-    const scale = 2;
-    canvas.width = width * scale;
-    canvas.height = height * scale;
+    const canvasWidth = 320;
+    const canvasHeight = 76;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
     const ctx = canvas.getContext("2d");
-    ctx.scale(scale, scale);
-    ctx.font = "600 13px Segoe UI, sans-serif";
+    ctx.font = "600 24px Segoe UI, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = "rgba(17, 18, 16, 0.72)";
-    roundRect(ctx, 1, 1, width - 2, height - 2, 8);
+    roundRect(ctx, 2, 2, canvasWidth - 4, canvasHeight - 4, 18);
     ctx.fill();
     ctx.strokeStyle = color;
     ctx.globalAlpha = 0.9;
-    roundRect(ctx, 1.5, 1.5, width - 3, height - 3, 8);
+    roundRect(ctx, 3, 3, canvasWidth - 6, canvasHeight - 6, 18);
     ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.fillStyle = color;
-    ctx.fillText(text, width / 2, height / 2);
+    ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
 
     const texture = new THREE.CanvasTexture(canvas);
     const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
@@ -434,7 +457,7 @@
       const radius = driver.diameter / 2;
       for (let i = 0; i <= 80; i += 1) {
         const angle = (i / 80) * Math.PI * 2;
-        points.push(new THREE.Vector3(driver.center.x + Math.cos(angle) * radius, driver.center.y + Math.sin(angle) * radius, driver.center.z));
+        points.push(new THREE.Vector3(driver.center.x + Math.cos(angle) * radius, driver.center.y, driver.center.z + Math.sin(angle) * radius));
       }
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       const material = new THREE.LineBasicMaterial({ color: driver.enabled ? 0xf5c542 : 0x7f8790 });
@@ -446,11 +469,12 @@
   function createSources(sources) {
     const group = new THREE.Group();
     const dims = project.cabinet.dimensions;
+    const scale = visualScale(dims);
     sources.forEach((source) => {
-      const geometry = new THREE.SphereGeometry(7, 16, 12);
+      const geometry = new THREE.SphereGeometry(scale * 0.07, 16, 12);
       const material = new THREE.MeshStandardMaterial({ color: 0xff6b5f, emissive: 0x44120f });
       const sphere = new THREE.Mesh(geometry, material);
-      sphere.position.set(source.center.x, source.center.y, dims.depth / 2 + 9);
+      sphere.position.set(source.center.x, dims.depth / 2 + scale * 0.1, source.center.z);
       group.add(sphere);
     });
     return group;
@@ -492,7 +516,7 @@
     document.getElementById("mesh-stats").textContent =
       summary.vertexCount.toLocaleString() + " verts / " +
       summary.triangleCount.toLocaleString() + " tris / " +
-      summary.minHeight.toFixed(2) + " to " + summary.maxHeight.toFixed(2) + " mm";
+      summary.minHeight.toFixed(3) + " to " + summary.maxHeight.toFixed(3) + " " + unitLabel();
   }
 
   function resize() {
@@ -512,8 +536,8 @@
   function resetView() {
     const dims = project.cabinet.dimensions;
     const span = Math.max(dims.width, dims.height, dims.depth);
-    camera.position.set(span * 0.95, span * 0.74, span * 1.08);
-    controls.target.set(0, 0, 0);
+    camera.position.set(span * 0.85, -span * 1.08, span * 0.74);
+    controls.target.set(0, 0, dims.height / 2);
     controls.update();
   }
 
@@ -570,6 +594,65 @@
   }
 
   function fmtDimension(value) {
-    return Number(value).toLocaleString(undefined, { maximumFractionDigits: 1 }) + " mm";
+    return Number(value).toLocaleString(undefined, { maximumFractionDigits: 3 }) + " " + unitLabel();
+  }
+
+  function unitLabel() {
+    return UNIT_LABELS[project.units] || project.units || "in";
+  }
+
+  function visualScale(dims) {
+    return Math.max(dims.width, dims.height, dims.depth, 1);
+  }
+
+  function lengthValue(inches) {
+    return project.units === "mm" ? inches * 25.4 : inches;
+  }
+
+  function lengthStep() {
+    return project.units === "mm" ? 1 : 0.125;
+  }
+
+  function smallLengthStep() {
+    return project.units === "mm" ? 0.1 : 0.01;
+  }
+
+  function falloffValue(perInch) {
+    return project.units === "mm" ? perInch / 25.4 : perInch;
+  }
+
+  function convertProjectUnits(target, from, to) {
+    const factor = unitFactor(from, to);
+    if (factor === 1) return;
+
+    multiplyFields(target.cabinet.dimensions, ["width", "height", "depth", "wallThickness"], factor);
+    multiplyFields(target.waves, ["reliefDepth", "reliefBias", "minThickness"], factor);
+    convertSourceList(target.drivers, factor);
+    convertSourceList(target.manualSources, factor);
+
+    if (target.panelization) multiplyFields(target.panelization, ["kerf", "edgeAllowance"], factor);
+  }
+
+  function convertSourceList(items, factor) {
+    items.forEach((item) => {
+      if (item.center) multiplyFields(item.center, ["x", "z"], factor);
+      if (Number.isFinite(Number(item.diameter))) item.diameter *= factor;
+      const source = item.source || item;
+      multiplyFields(source, ["amplitude", "wavelength"], factor);
+      if (Number.isFinite(Number(source.falloff))) source.falloff /= factor;
+    });
+  }
+
+  function multiplyFields(target, fields, factor) {
+    fields.forEach((fieldName) => {
+      if (target && Number.isFinite(Number(target[fieldName]))) target[fieldName] *= factor;
+    });
+  }
+
+  function unitFactor(from, to) {
+    if (from === to) return 1;
+    if (from === "in" && to === "mm") return 25.4;
+    if (from === "mm" && to === "in") return 1 / 25.4;
+    return 1;
   }
 }());

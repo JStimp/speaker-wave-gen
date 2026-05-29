@@ -11,6 +11,8 @@
 - Added side-panel controls for cabinet dimensions, wall limits, drivers, point sources, relief settings, preview resolution, and overlays.
 - Added flat-bottom geometry mode for a planar underside.
 - Added preview helpers for XYZ origin, outline box, floor grid, reset view, and dimension guides.
+- Changed coordinates to X width, Y depth, Z height with the origin at floor center and bottom on `Z=0`.
+- Added inch/mm unit selection with inches as the default.
 - Added JSON, OBJ, STL, and PNG browser exports.
 - Added browser smoke test page.
 - Documented STEP as a separate future Docker exporter.

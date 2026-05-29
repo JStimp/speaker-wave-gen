@@ -12,7 +12,7 @@
 
   const DEFAULT_PROJECT = {
     schemaVersion: 1,
-    units: "mm",
+    units: "in",
     project: {
       name: "Default two-driver wave speaker",
       notes: "Static browser prototype."
@@ -20,10 +20,10 @@
     cabinet: {
       preset: "rectangular",
       dimensions: {
-        width: 520,
-        height: 760,
-        depth: 340,
-        wallThickness: 19
+        width: 20.5,
+        height: 30,
+        depth: 13.5,
+        wallThickness: 0.75
       }
     },
     drivers: [
@@ -31,28 +31,28 @@
         id: "woofer",
         label: "Woofer",
         face: "front",
-        center: { x: 0, y: -120 },
-        diameter: 220,
+        center: { x: 0, z: 10.25 },
+        diameter: 8.5,
         source: {
           enabled: true,
-          amplitude: 3.5,
-          wavelength: 118,
+          amplitude: 0.14,
+          wavelength: 4.65,
           phase: 0,
-          falloff: 0.0018
+          falloff: 0.046
         }
       },
       {
         id: "tweeter",
         label: "Tweeter",
         face: "front",
-        center: { x: 0, y: 180 },
-        diameter: 92,
+        center: { x: 0, z: 22 },
+        diameter: 3.6,
         source: {
           enabled: true,
-          amplitude: 1.8,
-          wavelength: 72,
+          amplitude: 0.07,
+          wavelength: 2.85,
           phase: 0.75,
-          falloff: 0.0022
+          falloff: 0.056
         }
       }
     ],
@@ -60,10 +60,10 @@
     waves: {
       baseAmplitude: 1,
       normalization: "softClip",
-      reliefDepth: 5.5,
+      reliefDepth: 0.22,
       reliefBias: 0,
       flatBottom: true,
-      minThickness: 12
+      minThickness: 0.47
     },
     preview: {
       resolution: "medium",
@@ -100,7 +100,18 @@
     const result = mergeDeep(createDefaultProject(), project || {});
     result.drivers = Array.isArray(result.drivers) ? result.drivers : [];
     result.manualSources = Array.isArray(result.manualSources) ? result.manualSources : [];
+    result.drivers.forEach((driver) => normalizeSourceCenter(driver.center, result.cabinet.dimensions));
+    result.manualSources.forEach((source) => normalizeSourceCenter(source.center, result.cabinet.dimensions));
     return result;
+  }
+
+  function normalizeSourceCenter(center, dims) {
+    if (!center || typeof center !== "object") return;
+    if (!Number.isFinite(Number(center.z))) {
+      center.z = Number.isFinite(Number(center.y)) ? Number(center.y) + dims.height / 2 : dims.height / 2;
+    }
+    center.x = Number(center.x) || 0;
+    center.z = Number(center.z) || 0;
   }
 
   function mergeDeep(base, patch) {
@@ -137,16 +148,16 @@
     const height = dims.height;
     const depth = dims.depth;
     const xLinear = (u - 0.5) * width;
-    const yLinear = (v - 0.5) * height;
-    const zFromFront = depth / 2 - u * depth;
-    const zFromFrontByV = depth / 2 - v * depth;
+    const zLinear = v * height;
+    const yFromFront = depth / 2 - u * depth;
+    const yFromFrontByV = depth / 2 - v * depth;
 
-    if (face === "front") return makePoint(face, u, v, xLinear, yLinear, depth / 2, [0, 0, 1]);
-    if (face === "back") return makePoint(face, u, v, (0.5 - u) * width, yLinear, -depth / 2, [0, 0, -1]);
-    if (face === "right") return makePoint(face, u, v, width / 2, yLinear, zFromFront, [1, 0, 0]);
-    if (face === "left") return makePoint(face, u, v, -width / 2, yLinear, zFromFront, [-1, 0, 0]);
-    if (face === "top") return makePoint(face, u, v, xLinear, height / 2, zFromFrontByV, [0, 1, 0]);
-    if (face === "bottom") return makePoint(face, u, v, xLinear, -height / 2, zFromFrontByV, [0, -1, 0]);
+    if (face === "front") return makePoint(face, u, v, xLinear, depth / 2, zLinear, [0, 1, 0]);
+    if (face === "back") return makePoint(face, u, v, (0.5 - u) * width, -depth / 2, zLinear, [0, -1, 0]);
+    if (face === "right") return makePoint(face, u, v, width / 2, yFromFront, zLinear, [1, 0, 0]);
+    if (face === "left") return makePoint(face, u, v, -width / 2, yFromFront, zLinear, [-1, 0, 0]);
+    if (face === "top") return makePoint(face, u, v, xLinear, yFromFrontByV, height, [0, 0, 1]);
+    if (face === "bottom") return makePoint(face, u, v, xLinear, yFromFrontByV, 0, [0, 0, -1]);
     throw new Error("Unknown face: " + face);
   }
 
@@ -174,7 +185,7 @@
         label: driver.label || driver.id,
         kind: "driver",
         face: driver.face || "front",
-        center: { x: Number(driver.center.x) || 0, y: Number(driver.center.y) || 0 },
+        center: { x: Number(driver.center.x) || 0, z: Number(driver.center.z) || 0 },
         amplitude: Number(driver.source.amplitude) || 0,
         wavelength: Math.max(0.001, Number(driver.source.wavelength) || 1),
         phase: Number(driver.source.phase) || 0,
@@ -188,7 +199,7 @@
         label: source.label || source.id,
         kind: "manual",
         face: source.face || "front",
-        center: { x: Number(source.center.x) || 0, y: Number(source.center.y) || 0 },
+        center: { x: Number(source.center.x) || 0, z: Number(source.center.z) || 0 },
         amplitude: Number(source.amplitude) || 0,
         wavelength: Math.max(0.001, Number(source.wavelength) || 1),
         phase: Number(source.phase) || 0,
@@ -207,28 +218,27 @@
 
   function frontSourceCuboidDistance(point, source, dims) {
     const halfW = dims.width / 2;
-    const halfH = dims.height / 2;
     const halfD = dims.depth / 2;
     const sx = source.center.x;
-    const sy = source.center.y;
+    const sz = source.center.z;
     const p = point.position;
-    const depthFromFront = halfD - p.z;
+    const depthFromFront = halfD - p.y;
 
-    if (point.face === "front") return distance2(p.x - sx, p.y - sy);
-    if (point.face === "right") return distance2(halfW + depthFromFront - sx, p.y - sy);
-    if (point.face === "left") return distance2(-halfW - depthFromFront - sx, p.y - sy);
-    if (point.face === "top") return distance2(p.x - sx, halfH + depthFromFront - sy);
-    if (point.face === "bottom") return distance2(p.x - sx, -halfH - depthFromFront - sy);
+    if (point.face === "front") return distance2(p.x - sx, p.z - sz);
+    if (point.face === "right") return distance2(halfW + depthFromFront - sx, p.z - sz);
+    if (point.face === "left") return distance2(-halfW - depthFromFront - sx, p.z - sz);
+    if (point.face === "top") return distance2(p.x - sx, dims.height + depthFromFront - sz);
+    if (point.face === "bottom") return distance2(p.x - sx, -depthFromFront - sz);
     if (point.face === "back") {
       return Math.min(
-        distance2(halfW + dims.depth + (halfW - p.x) - sx, p.y - sy),
-        distance2(-halfW - dims.depth - (p.x + halfW) - sx, p.y - sy),
-        distance2(p.x - sx, halfH + dims.depth + (halfH - p.y) - sy),
-        distance2(p.x - sx, -halfH - dims.depth - (p.y + halfH) - sy)
+        distance2(halfW + dims.depth + (halfW - p.x) - sx, p.z - sz),
+        distance2(-halfW - dims.depth - (p.x + halfW) - sx, p.z - sz),
+        distance2(p.x - sx, dims.height + dims.depth + (dims.height - p.z) - sz),
+        distance2(p.x - sx, -dims.depth - p.z - sz)
       );
     }
 
-    return distance3(p, { x: sx, y: sy, z: halfD });
+    return distance3(p, { x: sx, y: halfD, z: sz });
   }
 
   function computeWaveDisplacement(point, project) {
@@ -336,11 +346,11 @@
   }
 
   function createDriverOverlays(project) {
-    const z = project.cabinet.dimensions.depth / 2 + 1;
+    const y = project.cabinet.dimensions.depth / 2 + project.cabinet.dimensions.depth * 0.006;
     return project.drivers.map((driver) => ({
       id: driver.id,
       label: driver.label,
-      center: { x: driver.center.x, y: driver.center.y, z },
+      center: { x: driver.center.x, y, z: driver.center.z },
       diameter: driver.diameter,
       enabled: driver.source && driver.source.enabled
     }));
@@ -348,17 +358,17 @@
 
   function createSeamOverlay(dims) {
     const w = dims.width / 2;
-    const h = dims.height / 2;
     const d = dims.depth / 2;
+    const h = dims.height;
     const corners = {
-      ftl: { x: -w, y: h, z: d },
-      ftr: { x: w, y: h, z: d },
-      fbr: { x: w, y: -h, z: d },
-      fbl: { x: -w, y: -h, z: d },
-      btl: { x: -w, y: h, z: -d },
-      btr: { x: w, y: h, z: -d },
-      bbr: { x: w, y: -h, z: -d },
-      bbl: { x: -w, y: -h, z: -d }
+      ftl: { x: -w, y: d, z: h },
+      ftr: { x: w, y: d, z: h },
+      fbr: { x: w, y: d, z: 0 },
+      fbl: { x: -w, y: d, z: 0 },
+      btl: { x: -w, y: -d, z: h },
+      btr: { x: w, y: -d, z: h },
+      bbr: { x: w, y: -d, z: 0 },
+      bbl: { x: -w, y: -d, z: 0 }
     };
     const pairs = [
       ["ftl", "ftr"], ["ftr", "fbr"], ["fbr", "fbl"], ["fbl", "ftl"],

@@ -41,25 +41,31 @@
           <section class="panel">
             <h2>Project</h2>
             <label>Project name <input id="project-name" type="text"></label>
+            <label>Units
+              <select id="unit-select">
+                <option value="in">Inches</option>
+                <option value="mm">Millimeters</option>
+              </select>
+            </label>
           </section>
 
           <section class="panel">
             <h2>Cabinet</h2>
             <div class="grid-2">
-              <label><span><span class="axis-dot axis-x"></span>Width X</span><input data-path="cabinet.dimensions.width" data-dimension="x" type="number" step="1"></label>
-              <label><span><span class="axis-dot axis-y"></span>Height Y</span><input data-path="cabinet.dimensions.height" data-dimension="y" type="number" step="1"></label>
-              <label><span><span class="axis-dot axis-z"></span>Depth Z</span><input data-path="cabinet.dimensions.depth" data-dimension="z" type="number" step="1"></label>
-              <label>Wall <input data-path="cabinet.dimensions.wallThickness" type="number" step="1"></label>
+              <label><span><span class="axis-dot axis-x"></span>Width X</span><input data-path="cabinet.dimensions.width" data-dimension="x" type="number" step="0.125"></label>
+              <label><span><span class="axis-dot axis-y"></span>Depth Y</span><input data-path="cabinet.dimensions.depth" data-dimension="y" type="number" step="0.125"></label>
+              <label><span><span class="axis-dot axis-z"></span>Height Z</span><input data-path="cabinet.dimensions.height" data-dimension="z" type="number" step="0.125"></label>
+              <label>Wall <input data-path="cabinet.dimensions.wallThickness" type="number" step="0.0625"></label>
             </div>
           </section>
 
           <section class="panel">
             <h2>Wave Relief</h2>
             <div class="grid-2">
-              <label>Relief depth <input data-path="waves.reliefDepth" type="number" step="0.1"></label>
+              <label>Relief depth <input data-path="waves.reliefDepth" type="number" step="0.01"></label>
               <label>Base amp <input data-path="waves.baseAmplitude" type="number" step="0.1"></label>
-              <label>Bias <input data-path="waves.reliefBias" type="number" step="0.1"></label>
-              <label>Min wall <input data-path="waves.minThickness" type="number" step="0.5"></label>
+              <label>Bias <input data-path="waves.reliefBias" type="number" step="0.01"></label>
+              <label>Min wall <input data-path="waves.minThickness" type="number" step="0.01"></label>
             </div>
             <label class="check"><input data-path="waves.flatBottom" type="checkbox"> Flat bottom</label>
             <label>Normalization

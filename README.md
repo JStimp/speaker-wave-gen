@@ -1,6 +1,6 @@
 # Speaker 3D Wave CAD Generator
 
-WaveGen3D is now a static browser prototype for speaker enclosures with continuous 3D wave-interference relief. It runs from local files: no Node.js, npm, Vite, Rollup, Electron, install step, server, or package manager.
+WaveGen3D is now a static browser prototype for speaker enclosures with continuous 3D wave-interference relief. It defaults to inches and runs from local files: no Node.js, npm, Vite, Rollup, Electron, install step, server, or package manager.
 
 ## Launch
 
@@ -21,7 +21,9 @@ You can also open `app/index.html` directly in a browser.
 ## Current Prototype
 
 - Rectangular speaker cabinet preview.
-- Continuous wave relief across all six faces.
+- CAD-style coordinates: X width, Y depth, Z height, with the origin at the floor center and the bottom on `Z=0`.
+- Continuous wave relief across the active waved faces, with an optional flat bottom for real placement.
+- Unit selection for inches or millimeters.
 - Driver/source add/remove controls.
 - Advanced source controls for position, diameter, amplitude, wavelength, phase, and falloff.
 - Relief depth, flat-bottom, bias, normalization, resolution, and overlay controls.
