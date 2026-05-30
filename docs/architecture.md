@@ -2,37 +2,58 @@
 
 ## Goals
 
-The generator is built around a true 3D enclosure model. The UI edits speaker-box parameters, the core package generates a continuous relief field over the cabinet shell, and the exporter turns the project into CAD/CAM-friendly artifacts.
+WaveGen3D is a static browser prototype. The first priority is a stable app that opens from a cloned folder without installing anything.
 
-The v1 project generated 2D panel surfaces. V2 intentionally changes the architecture so the surface field is evaluated before panel splitting. That means the same wave function drives the front, sides, top, bottom, and back, and panel boundaries inherit matching relief values.
+## Major Systems
 
-## Major systems
+- Static browser UI in `app/`.
+- Vendored Three.js files in `app/vendor/`.
+- Browser-side geometry math in `app/geometry.js`.
+- Browser-side JSON/OBJ/STL/STEP exporters in `app/exporters.js`.
+- Future CAD-kernel STEP direction documented separately in `docs/step-exporter-plan.md`.
 
-- Desktop shell: Electron hosts a React app with a Three.js viewport.
-- Shared core: project schema, defaults, shape presets, source handling, wave math, and preview mesh generation.
-- Exporter: Python CLI designed to run under Docker/WSL Linux for OpenCascade/OCP-based STEP generation.
-- Project files: versioned `*.wavecad.json` files are the durable interface between UI, tests, and exporter.
-
-## Data flow
+## Data Flow
 
 ```text
-User edits parameters
-  -> React state validates through shared schema
-  -> Core builds preview mesh and overlays
-  -> Electron backend saves/loads project files
-  -> Export job sends project JSON to Docker/WSL exporter
-  -> Exporter writes STEP/STL/OBJ/report artifacts
+User edits controls
+  -> project object updates in memory
+  -> geometry mesh rebuilds in the browser
+  -> Three.js preview redraws
+  -> user downloads JSON, OBJ, STL, STEP, or PNG
 ```
 
-## Geometry model
+## Geometry Model
 
-The first release treats built-in cabinets as shell presets. A rectangular enclosure is implemented first because it gives predictable panels and clear CNC behavior. Wedge, rounded, and curved presets are schema-supported and reserved for the next geometry pass.
+The prototype supports a rectangular enclosure. Coordinates follow a CAD-style floor origin:
 
-Wave sources are driver-based by default. Driver centers are placed on the baffle and converted into source definitions. Manual extra sources can be added to bias the pattern.
+- X is cabinet width, centered on the origin.
+- Y is cabinet depth, centered on the origin.
+- Z is cabinet height, with the bottom surface on `Z=0`.
 
-The current core evaluates surface distances for front-mounted driver sources with a cuboid unfolding model. That gives continuous values along front-to-side, front-to-top, and front-to-bottom seams. Imported CAD bodies will use a sampled mesh surface path in later iterations.
+The wave field is evaluated on the full cuboid shell before any panel thinking, so shared edges use the same relief height.
 
-## Windows CAD-kernel boundary
+Front-mounted sources use a cuboid-unfolding distance model on sharp cabinets. When corner wrap is enabled, the wave field switches to the rounded 3D surface positions at wrapped edges so adjacent faces keep matched relief.
 
-The Windows desktop app does not import OCP, OpenCascade, CadQuery, or pythonOCC. The handoff identified Windows Application Control blocking native CAD DLLs, so native CAD generation lives in the Linux exporter only.
+Corner wrap is not a simple hard fillet. It progressively softens the vertical, upper, and lower perimeter edges. In flat-bottom mode, the central underside stays planar on `Z=0` while the perimeter rounds inward and upward away from the contact patch.
 
+Relief depth is clipped by the requested relief depth and by the cabinet wall thickness minus the configured minimum remaining wall. This keeps aggressive settings from previewing an impossible carve depth.
+
+When flat bottom is enabled, the bottom face receives zero wave displacement and the lower perimeter is guarded against outward flaring. Positive outward relief near the floor transitions inward, while the actual contact surface stays closed and planar on `Z=0`.
+
+## Units
+
+Projects default to inches. Switching between inches and millimeters converts cabinet dimensions, driver/source lengths, wave lengths, relief depths, and falloff values so the design keeps the same physical size.
+
+## Preview Aids
+
+The viewer can draw an original-size outline box, RGB XYZ origin axes, a floor grid on `Z=0`, live dimension guide lines, and relief analysis planes. The width, depth, and height controls are keyed to those same axis colors so it is clear which model direction will change.
+
+Analysis planes show the current min/max relief offsets around the cabinet, while the View Tools panel reports total deviation, max outward, max inward, and max absolute relief in the active units.
+
+Sources are edited through compact selectable chips plus one focused editor. Clicking a source marker in the preview also selects that source, so source changes do not require scrolling through every driver.
+
+Preview mesh resolution and output mesh quality are separate. The preview can stay responsive while OBJ, STL, and STEP exports rebuild from a denser mesh.
+
+## Stability Boundary
+
+The active prototype has no Node, npm, Vite, Rollup, Electron, Python, Docker, or CAD-kernel dependency. The built-in smooth STEP export uses spline surfaces in a BREP shell; higher-order analytic CAD solids remain a future CAD-kernel track.

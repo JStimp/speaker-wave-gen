@@ -1,36 +1,28 @@
 # CAD Export Notes
 
-## Preferred workflow
+## Current Prototype
 
-```text
-.wavecad.json
-  -> Linux exporter
-  -> full cabinet STEP
-  -> separated panel STEP files
-  -> SolidWorks or Mastercam
-```
+The static app exports:
 
-STEP is the primary target because it preserves topology better than STL and is more reliable for SolidWorks/Mastercam workflows.
+- `.wavecad.json`
+- `.obj`
+- `.stl`
+- `.step`
+- `.png` preview screenshot
 
-## Fallback workflow
+OBJ and STL are mesh exports for inspection and rough CAM experiments. They are not editable CAD surfaces. Mesh coordinates use the selected project units.
 
-When OpenCascade/OCP is unavailable, the exporter still writes:
+OBJ, STL, and STEP exports rebuild from the selected export quality rather than the live preview resolution. The exported geometry follows settings such as corner wrap and flat-bottom mode. In flat-bottom mode, the underside contact patch stays on `Z=0` and the lower perimeter rounds inward and upward so the exported body closes without an outward base flange.
 
-- preview mesh JSON
-- cabinet OBJ
-- cabinet STL
-- separated panel OBJ/STL files
-- export report with warnings
+## STEP
 
-These mesh outputs are useful for preview and fit checks, but they are not a replacement for editable CAD surfaces.
+The static prototype includes two in-house STEP modes:
 
-## Panel strategy
+- Smooth surface solid: a BREP shell built from spline surface faces. This is the default and should be much friendlier in SolidWorks than triangle-facet STEP.
+- Faceted solid fallback: a triangular BREP retained for troubleshooting import problems.
 
-The core surface is generated first. Panels are derived from face samples after wave evaluation, so shared edges receive the same relief height. This avoids the v1 problem where independently generated panels did not meet visually at corners.
+This is not the final analytic CAD target. Clean editable CAD surfaces and separated panel STEP files still need a CAD-kernel exporter. See [STEP exporter plan](step-exporter-plan.md).
 
-## Imported geometry
+## Panel Strategy
 
-- STEP imports are the preferred route for editable CAD bodies.
-- STL imports are supported as reference/preview geometry first.
-- Complex STL-to-STEP reconstruction is explicitly treated as a later capability because clean CAD surfaces matter more than mesh conversion.
-
+The surface is generated as a full cuboid shell first. Panels can be derived later from face samples, which preserves matched relief along shared edges.

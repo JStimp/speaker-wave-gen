@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>WaveGen3D Smoke Test</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 32px; }
+      .pass { color: #1f7a3f; }
+      .fail { color: #a32020; }
+    </style>
+  </head>
+  <body>
+    <h1>WaveGen3D Smoke Test</h1>
+    <pre id="results"></pre>
+    <script src="geometry.js"></script>
+    <script src="exporters.js"></script>
+    <script>
+      (function () {
+        const lines = [];
+        let failed = false;
+
+        function check(label, condition) {
+          if (!condition) failed = true;
+          lines.push((condition ? "PASS " : "FAIL ") + label);
+        }
+
+        const project = WaveGeometry.createDefaultProject();
+        const mesh = WaveGeometry.generatePreviewMesh(project, { resolution: "draft" });
+        const exportMesh = WaveGeometry.generatePreviewMesh(project, { resolution: "high" });
+        const dims = project.cabinet.dimensions;
+        const front = WaveGeometry.pointOnFace("front", 1, 0.42, dims, project);
+        const right = WaveGeometry.pointOnFace("right", 0, 0.42, dims, project);
+        const frontFloor = WaveGeometry.pointOnFace("front", 0.37, 0, dims, project);
+        const bottomFront = WaveGeometry.pointOnFace("bottom", 0.37, 0, dims, project);
+        const bottom = WaveGeometry.pointOnFace("bottom", 0.37, 0.62, dims, project);
+        const back = WaveGeometry.pointOnFace("back", 0.41, 0.58, dims, project);
+        const frontHeight = WaveGeometry.computeWaveDisplacement(front, project).displacement;
+        const rightHeight = WaveGeometry.computeWaveDisplacement(right, project).displacement;
+        const frontFloorHeight = WaveGeometry.computeWaveDisplacement(frontFloor, project).displacement;
+        const bottomHeight = WaveGeometry.computeWaveDisplacement(bottom, project).displacement;
+        const backHeight = WaveGeometry.computeWaveDisplacement(back, project).displacement;
+        const minZ = Math.min.apply(null, mesh.vertices.filter((value, index) => index % 3 === 2));
+        const halfDepth = dims.depth / 2;
+        const floorGuardProject = WaveGeometry.createDefaultProject();
+        floorGuardProject.drivers[0].center.z = 0.12;
+        floorGuardProject.drivers[0].source.phase = Math.PI / 2;
+        floorGuardProject.drivers[0].source.falloff = 0;
+        floorGuardProject.drivers[0].source.wavelength = 100;
+        floorGuardProject.drivers[1].source.enabled = false;
+        const lowerWall = WaveGeometry.pointOnFace("front", 0.5, 0.01, floorGuardProject.cabinet.dimensions, floorGuardProject);
+        const lowerWallHeight = WaveGeometry.computeWaveDisplacement(lowerWall, floorGuardProject).displacement;
+
+        check("default units are inches", project.units === "in");
+        check("default project loads", project.project.name.length > 0);
+        check("mesh has finite vertices", mesh.vertices.length > 0 && mesh.vertices.every(Number.isFinite));
+        check("mesh summary includes relief deviation", mesh.summary.deviation > 0 && mesh.summary.maxAbsHeight > 0);
+        check("export mesh is higher resolution than preview", exportMesh.summary.triangleCount > mesh.summary.triangleCount);
+        check("front/right seam heights match", Math.abs(frontHeight - rightHeight) < 1e-9);
+        check("bottom front edge rounds inward and upward", frontFloor.position.y < halfDepth && frontFloor.position.z > 0);
+        check("lower rounded edge relief does not flare outward", frontFloorHeight <= 0);
+        check("positive lower-wall relief turns inward near floor", lowerWallHeight <= 0);
+        check("front/bottom floor edge positions match", Math.abs(frontFloor.position.x - bottomFront.position.x) < 1e-12 && Math.abs(frontFloor.position.y - bottomFront.position.y) < 1e-12 && Math.abs(frontFloor.position.z - bottomFront.position.z) < 1e-12);
+        check("flat bottom has zero wave displacement", Math.abs(bottomHeight) < 1e-12);
+        check("bottom surface remains at Z0", Math.abs(minZ) < 1e-12);
+        check("back face still receives waves", Math.abs(backHeight) > 1e-5);
+        check("OBJ exporter returns text", WaveExporters.meshToObj(exportMesh, "test").length > 100);
+        check("STL exporter returns text", WaveExporters.meshToStl(exportMesh, "test").length > 100);
+        check("STEP exporter returns smooth BREP text", WaveExporters.meshToStep(mesh, project, "test").includes("B_SPLINE_SURFACE_WITH_KNOTS"));
+
+        const results = document.getElementById("results");
+        results.textContent = lines.join("\n");
+        results.className = failed ? "fail" : "pass";
+        document.title = failed ? "Smoke Test Failed" : "Smoke Test Passed";
+      }());
+    </script>
+  </body>
+</html>

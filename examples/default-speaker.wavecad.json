@@ -1,53 +1,47 @@
 {
   "schemaVersion": 1,
-  "units": "mm",
+  "units": "in",
   "project": {
     "name": "Default two-driver wave speaker",
     "notes": "Starter project for the V2 3D wave CAD generator."
   },
   "cabinet": {
-    "mode": "preset",
     "preset": "rectangular",
+    "cornerWrap": 0.18,
     "dimensions": {
-      "width": 520,
-      "height": 760,
-      "depth": 340,
-      "wallThickness": 19,
-      "edgeRadius": 8
-    },
-    "material": {
-      "name": "hardwood",
-      "thickness": 19
-    },
-    "import": null
+      "width": 20.5,
+      "height": 30,
+      "depth": 13.5,
+      "wallThickness": 0.75
+    }
   },
   "drivers": [
     {
       "id": "woofer",
       "label": "Woofer",
       "face": "front",
-      "center": { "x": 0, "y": -120 },
-      "diameter": 220,
+      "center": { "x": 0, "z": 10.25 },
+      "diameter": 8.5,
       "source": {
         "enabled": true,
-        "amplitude": 3.5,
-        "wavelength": 118,
+        "amplitude": 0.14,
+        "wavelength": 4.65,
         "phase": 0,
-        "falloff": 0.0018
+        "falloff": 0.046
       }
     },
     {
       "id": "tweeter",
       "label": "Tweeter",
       "face": "front",
-      "center": { "x": 0, "y": 180 },
-      "diameter": 92,
+      "center": { "x": 0, "z": 22 },
+      "diameter": 3.6,
       "source": {
         "enabled": true,
-        "amplitude": 1.8,
-        "wavelength": 72,
+        "amplitude": 0.07,
+        "wavelength": 2.85,
         "phase": 0.75,
-        "falloff": 0.0022
+        "falloff": 0.056
       }
     }
   ],
@@ -55,17 +49,24 @@
   "waves": {
     "baseAmplitude": 1,
     "normalization": "softClip",
-    "reliefDepth": 5.5,
+    "reliefDepth": 0.22,
     "reliefBias": 0,
-    "minThickness": 12,
-    "smoothing": 0.35
+    "flatBottom": true,
+    "minThickness": 0.47
   },
   "preview": {
-    "resolution": "medium",
+    "resolution": "high",
     "showSeams": true,
     "showDrivers": true,
     "showSources": true,
-    "colorMode": "height"
+    "showPanels": true,
+    "showOutline": true,
+    "showAxes": true,
+    "showDimensions": true,
+    "showAnalysis": true,
+    "showGrid": true,
+    "colorMode": "relief",
+    "heightContrast": 1.75
   },
   "panelization": {
     "mode": "separated",
@@ -75,10 +76,9 @@
     "edgeAllowance": 2
   },
   "export": {
-    "formats": ["step", "stl", "obj"],
-    "stepMode": "solidAndPanels",
-    "meshTolerance": 0.25,
-    "outputDirectory": "exports"
+    "formats": ["json", "obj", "stl", "step"],
+    "resolution": "production",
+    "stepMode": "smoothSurfaceStep",
+    "surfaceControlLimit": 34
   }
 }
-

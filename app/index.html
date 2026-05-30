@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>WaveGen3D</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div class="brand">
+          <strong>WaveGen3D</strong>
+          <span>Static speaker wave CAD prototype</span>
+        </div>
+        <div class="actions">
+          <label class="file-button">
+            Load JSON
+            <input id="load-project" type="file" accept=".json,.wavecad.json">
+          </label>
+          <button id="save-json" type="button">Save JSON</button>
+          <button id="export-obj" type="button">OBJ</button>
+          <button id="export-stl" type="button">STL</button>
+          <button id="export-step" type="button">STEP</button>
+          <button id="save-png" type="button">PNG</button>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <section class="viewer-wrap">
+          <div id="viewer"></div>
+          <div class="hud">
+            <span>Orbit</span>
+            <span>Pan</span>
+            <span>Zoom</span>
+            <button id="reset-view" type="button">Reset View</button>
+            <span id="mesh-stats">Ready</span>
+          </div>
+        </section>
+
+        <aside class="controls">
+          <section class="panel">
+            <h2>Project</h2>
+            <label>Project name <input id="project-name" type="text"></label>
+            <label>Units
+              <select id="unit-select">
+                <option value="in">Inches</option>
+                <option value="mm">Millimeters</option>
+              </select>
+            </label>
+          </section>
+
+          <section class="panel">
+            <h2>Cabinet</h2>
+            <div class="grid-2">
+              <label><span><span class="axis-dot axis-x"></span>Width X</span><input data-path="cabinet.dimensions.width" data-dimension="x" type="number" step="0.125"></label>
+              <label><span><span class="axis-dot axis-y"></span>Depth Y</span><input data-path="cabinet.dimensions.depth" data-dimension="y" type="number" step="0.125"></label>
+              <label><span><span class="axis-dot axis-z"></span>Height Z</span><input data-path="cabinet.dimensions.height" data-dimension="z" type="number" step="0.125"></label>
+              <label>Wall <input data-path="cabinet.dimensions.wallThickness" type="number" step="0.0625"></label>
+            </div>
+            <label>Corner wrap <input data-path="cabinet.cornerWrap" type="range" min="0" max="1" step="0.01"></label>
+          </section>
+
+          <section class="panel">
+            <h2>Wave Relief</h2>
+            <div class="grid-2">
+              <label>Relief depth <input data-path="waves.reliefDepth" type="number" step="0.01"></label>
+              <label>Base amp <input data-path="waves.baseAmplitude" type="number" step="0.1"></label>
+              <label>Bias <input data-path="waves.reliefBias" type="number" step="0.01"></label>
+              <label>Min wall <input data-path="waves.minThickness" type="number" step="0.01"></label>
+            </div>
+            <label class="check"><input data-path="waves.flatBottom" type="checkbox"> Flat bottom</label>
+            <label>Normalization
+              <select data-path="waves.normalization">
+                <option value="softClip">Soft clip</option>
+                <option value="clamp">Clamp</option>
+                <option value="none">None</option>
+              </select>
+            </label>
+            <label>Resolution
+              <select data-path="preview.resolution">
+                <option value="draft">Draft</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="ultra">Ultra</option>
+              </select>
+            </label>
+          </section>
+
+          <section class="panel">
+            <div class="section-row">
+              <h2>Drivers & Sources</h2>
+              <div class="button-row">
+                <button id="add-driver" type="button">Add Driver</button>
+                <button id="add-source" type="button">Add Point</button>
+              </div>
+            </div>
+            <div id="source-list" class="source-list"></div>
+            <div id="source-editor" class="source-editor"></div>
+          </section>
+
+          <section class="panel">
+            <h2>View Tools</h2>
+            <label>Wave color
+              <select data-path="preview.colorMode">
+                <option value="relief">Relief contrast</option>
+                <option value="wood">Wood relief</option>
+                <option value="mono">Solid shaded</option>
+              </select>
+            </label>
+            <label>Color contrast <input data-path="preview.heightContrast" type="number" step="0.1" min="0.5" max="4"></label>
+            <label class="check"><input data-path="preview.showOutline" type="checkbox"> Outline box</label>
+            <label class="check"><input data-path="preview.showAxes" type="checkbox"> XYZ origin</label>
+            <label class="check"><input data-path="preview.showDimensions" type="checkbox"> Dimension guides</label>
+            <label class="check"><input data-path="preview.showAnalysis" type="checkbox"> Analysis planes</label>
+            <label class="check"><input data-path="preview.showGrid" type="checkbox"> Floor grid</label>
+            <label class="check"><input data-path="preview.showSeams" type="checkbox"> Seams</label>
+            <label class="check"><input data-path="preview.showDrivers" type="checkbox"> Driver rings</label>
+            <label class="check"><input data-path="preview.showSources" type="checkbox"> Source points</label>
+            <label class="check"><input data-path="preview.showPanels" type="checkbox"> Surface wire</label>
+            <div id="analysis-stats" class="analysis-stats"></div>
+          </section>
+
+          <section class="panel">
+            <h2>Output</h2>
+            <label>Export quality
+              <select data-path="export.resolution">
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="ultra">Ultra</option>
+                <option value="fine">Fine</option>
+                <option value="production">Production</option>
+              </select>
+            </label>
+            <label>STEP body
+              <select data-path="export.stepMode">
+                <option value="smoothSurfaceStep">Smooth surface solid</option>
+                <option value="facetedSolidStep">Faceted solid fallback</option>
+              </select>
+            </label>
+            <label>Surface controls <input data-path="export.surfaceControlLimit" type="number" min="10" max="64" step="1"></label>
+            <p id="export-status" class="status-text">Exports use the selected output quality, independent of preview resolution.</p>
+          </section>
+
+          <section class="panel note">
+            <h2>STEP</h2>
+            <p>Smooth STEP exports spline surfaces for a cleaner SolidWorks import. Faceted fallback is still available for troubleshooting.</p>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script src="vendor/three.min.js"></script>
+    <script src="vendor/OrbitControls.js"></script>
+    <script src="geometry.js"></script>
+    <script src="exporters.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

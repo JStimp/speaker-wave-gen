@@ -1,58 +1,65 @@
 # Speaker 3D Wave CAD Generator
 
-Desktop CAD-style generator for speaker enclosures with continuous 3D wave-interference relief. The app is designed for hardwood CNC workflows where a full cabinet preview can be split into routable panels without losing the visual wave continuity at the corners.
+WaveGen3D is now a static browser prototype for speaker enclosures with continuous 3D wave-interference relief. It defaults to inches and runs from local files: no Node.js, npm, Vite, Rollup, Electron, install step, server, or package manager.
 
-## What this version builds
+## Launch
 
-- Electron + React + Three.js desktop app for live preview and parameter editing.
-- Shared geometry core that computes wave relief on a 3D cabinet shell.
-- Versioned `*.wavecad.json` project format.
-- Linux-oriented exporter CLI for STEP-first CAD output, with STL/OBJ preview fallbacks.
-- Docker/WSL export path so Windows UI development does not depend on blocked OpenCascade DLLs.
-- Unit tests for schema validation, wave math, preview mesh generation, and seam continuity.
-
-## Repository layout
+Double-click:
 
 ```text
-apps/desktop        Electron desktop app and Three.js viewport
-packages/core       Shared schema, defaults, wave math, cabinet sampling, preview mesh
-exporter            Python CLI and Docker image for CAD/export generation
-examples            Sample .wavecad.json projects
-scripts             Helper scripts for Docker/WSL exporter runs
-docs                Architecture and CAD export notes
+Launch-WaveGen3D.bat
 ```
 
-## Quick start
+The launcher opens:
 
-```bash
-npm install
-npm run dev
+```text
+app/index.html
 ```
 
-The renderer starts through Vite and Electron opens the desktop shell.
+You can also open `app/index.html` directly in a browser.
 
-Run dependency-light tests:
+## Current Prototype
 
-```bash
-npm test
+- Rectangular speaker cabinet preview.
+- CAD-style coordinates: X width, Y depth, Z height, with the origin at the floor center and the bottom on `Z=0`.
+- Continuous wave relief across the active waved faces, with an optional flat bottom that keeps the contact surface on `Z=0` while the lower perimeter rounds inward and upward.
+- Corner wrap control for smoother wave continuity around softened cabinet edges.
+- Unit selection for inches or millimeters.
+- Driver/source add/remove controls with selectable source chips and a focused source editor.
+- Advanced source controls for position, diameter, amplitude, wavelength, phase, and falloff.
+- Relief depth, flat-bottom, bias, normalization, preview resolution, export quality, and overlay controls.
+- Visual helpers for the origin, XYZ axes, outline box, floor grid, live dimension guides, and min/max relief analysis planes.
+- Orbit/pan/zoom 3D viewport using vendored Three.js files.
+- Browser downloads for `.wavecad.json`, `.obj`, `.stl`, smooth spline `.step`, and preview `.png`.
+- OBJ/STL/STEP exports use a separate output quality setting, so they can be higher resolution than the live preview.
+
+## Repository Layout
+
+```text
+app/                 Static browser prototype
+app/vendor/          Vendored Three.js browser files
+examples/            Sample .wavecad.json projects
+docs/                Architecture and exporter notes
+.github/workflows/   Lightweight static checks only
 ```
 
-Run the exporter locally:
+Project tracking docs:
 
-```bash
-python -m pip install -e exporter
-python -m wavecad_exporter --config examples/default-speaker.wavecad.json --out exports --format all --panel-mode separated
+- [Changelog](CHANGELOG.md)
+- [Development notes](docs/development-notes.md)
+- [STEP exporter plan](docs/step-exporter-plan.md)
+- [Third party notices](app/vendor/THIRD_PARTY_NOTICES.md)
+
+## Smoke Test
+
+Open:
+
+```text
+app/smoke-test.html
 ```
 
-For STEP output, use the Docker/WSL exporter path on Linux with OpenCascade/OCP available:
+It checks that the default project loads, mesh vertices are finite, rounded front/right seam heights match, flat-bottom floor relief behaves correctly, the export mesh is higher resolution than the preview mesh, and OBJ/STL/STEP exporters produce text.
 
-```bash
-docker build -f exporter/Dockerfile -t speaker-wave-exporter .
-docker run --rm -v "%cd%:/work" speaker-wave-exporter --config /work/examples/default-speaker.wavecad.json --out /work/exports --format all --panel-mode separated
-```
+## STEP Direction
 
-## Design direction
-
-The wave field is evaluated on the actual cabinet shell, not on independent flat panels. Panel exports are derived from that shell, which keeps matching relief heights along shared edges. Driver centers are the default wave sources, and manual point sources can be added for tuning.
-
-STEP is the preferred manufacturing exchange format. STL and OBJ are included for preview, fallback, and inspection, but they are not treated as the primary CAD workflow.
+The static app includes an in-house smooth spline STEP export plus a faceted fallback. A later CAD-kernel exporter can still improve this into cleaner analytic solids and separated panels.
