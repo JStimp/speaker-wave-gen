@@ -11,8 +11,6 @@ def main(argv=None):
     parser.add_argument("--resolution", default=None, help="Sampling resolution preset: high, ultra, fine, production")
     parser.add_argument("--surface-controls", type=int, default=None, help="Maximum spline control points per face direction")
     parser.add_argument("--tolerance", type=float, default=None, help="Sewing tolerance in STEP units after unit conversion")
-    parser.add_argument("--mode", choices=("auto", "smooth", "faceted"), default="auto", help="Export mode. auto tries smooth, then writes a faceted solid fallback if needed.")
-    parser.add_argument("--facet-resolution", default=None, help="Fallback faceted solid resolution preset")
     parser.add_argument("--debug-surfaces", action="store_true", help="Always write outer-surfaces-debug.step")
     parser.add_argument("--report-only", action="store_true", help="Generate geometry summary without loading OCP")
     args = parser.parse_args(argv)
@@ -36,8 +34,6 @@ def main(argv=None):
             control_limit=args.surface_controls,
             tolerance=args.tolerance,
             debug_surfaces=args.debug_surfaces,
-            mode=args.mode,
-            facet_resolution=args.facet_resolution,
         )
     except Exception as error:
         print(f"WaveGen3D solid STEP export failed: {error}", file=sys.stderr)

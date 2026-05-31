@@ -60,8 +60,7 @@ if errorlevel 1 (
 
 echo.
 echo Exporting solid STEP...
-echo Mode: auto smooth sew, then faceted solid fallback if needed.
-docker run --rm -v "%INPUT_DIR%:/input:ro" -v "%OUTPUT_DIR%:/output" wavegen3d-solid-step:latest "/input/%INPUT_NAME%" --output-dir /output --debug-surfaces --mode auto
+docker run --rm -v "%INPUT_DIR%:/input:ro" -v "%OUTPUT_DIR%:/output" wavegen3d-solid-step:latest "/input/%INPUT_NAME%" --output-dir /output --debug-surfaces
 if errorlevel 1 (
   echo.
   echo Solid STEP export failed. Check exports\outer-solid.report.json or the message above.

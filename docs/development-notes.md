@@ -26,7 +26,6 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added corner wrap geometry for smoother wrapped edges while preserving a flat underside contact patch.
 - Added browser JSON, OBJ, STL, experimental spline STEP, faceted STEP fallback, and PNG exports.
 - Added a Docker-only CadQuery/OCP solid STEP exporter for the first outer-block SolidWorks import path.
-- Added Docker exporter `auto` mode: it tries the smoother spline sew first, then writes a watertight faceted solid fallback if the smooth shell has free edges or fails STEP re-import.
 - Added an example `default-speaker.wavecad.json` project.
 - Added a browser smoke test page.
 - Reduced CI to static file and dependency-free checks.
@@ -49,7 +48,7 @@ This file tracks the practical work being done in the repo so the project has a 
 - Browser file dialogs use upload/download controls.
 - OBJ/STL are mesh exports, not editable CAD surfaces.
 - Browser STEP is an experimental spline-surface BREP or faceted fallback. Use the Docker solid exporter for the SolidWorks solid-body path.
-- The Docker exporter currently targets one outer solid block. Its faceted fallback is meant to get SolidWorks one solid body now; smooth editable NURBS-like solids, hollow shells, cutouts, and separated CAD panels remain future work.
+- The Docker exporter currently targets one outer solid block; hollow shells, cutouts, and separated CAD panels remain future work.
 
 ## Verification Run By Codex
 
