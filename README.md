@@ -30,7 +30,7 @@ You can also open `app/index.html` directly in a browser.
 - Relief depth, flat-bottom, bias, normalization, preview resolution, export quality, and overlay controls.
 - Visual helpers for the origin, XYZ axes, outline box, floor grid, live dimension guides, and min/max relief analysis planes.
 - Orbit/pan/zoom 3D viewport using vendored Three.js files.
-- Browser downloads for `.wavecad.json`, `.obj`, `.stl`, experimental spline `.step`, and preview `.png`.
+- Browser downloads for `.wavecad.json`, `.obj`, `.stl`, experimental spline `.step`, Solid STEP project `.wavecad.json`, and preview `.png`.
 - OBJ/STL/browser STEP exports use a separate output quality setting, so they can be higher resolution than the live preview.
 - Docker-based SolidWorks export through `Export-Solid-Step.bat`, which produces `exports/outer-solid.step` from a saved `.wavecad.json`.
 
@@ -70,4 +70,4 @@ The static app includes an experimental browser STEP export plus a faceted fallb
 Export-Solid-Step.bat
 ```
 
-That path writes `exports/outer-solid.step` and validates that the generated STEP re-imports as one solid inside the exporter container. The first solid target is an outer block only; hollow walls, cutouts, and separated panels are later steps.
+From the browser, click `Solid STEP Project` to download a `.solid-step.wavecad.json` file, then drag that file onto `Export-Solid-Step.bat`. That path writes `exports/outer-solid.step` and validates that the generated STEP re-imports as one solid inside the exporter container. The first solid target is an outer block only; hollow walls, cutouts, and separated panels are later steps.

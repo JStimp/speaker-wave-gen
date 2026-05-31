@@ -8,6 +8,7 @@ The static app exports:
 - `.obj`
 - `.stl`
 - experimental browser `.step`
+- Solid STEP project `.wavecad.json`
 - `.png` preview screenshot
 
 OBJ and STL are mesh exports for inspection and rough CAM experiments. They are not editable CAD surfaces. Mesh coordinates use the selected project units.
@@ -21,7 +22,7 @@ The browser app includes two in-house STEP modes:
 - Experimental spline surfaces: a hand-written BREP shell built from spline surface faces. SolidWorks may import this as surface bodies.
 - Faceted solid fallback: a triangular BREP retained for troubleshooting import problems.
 
-For SolidWorks solid-body import, use `Export-Solid-Step.bat`. That Docker path runs a real OpenCascade-based sewing and validation step and writes `exports/outer-solid.step` plus `exports/outer-solid.report.json`.
+For SolidWorks solid-body import, click `Solid STEP Project` in the browser, then drag the downloaded `.solid-step.wavecad.json` onto `Export-Solid-Step.bat`. That Docker path runs a real OpenCascade-based sewing and validation step and writes `exports/outer-solid.step` plus `exports/outer-solid.report.json`.
 
 ## Panel Strategy
 

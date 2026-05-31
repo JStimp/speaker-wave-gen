@@ -36,7 +36,7 @@ WaveGen3D .wavecad.json
 
 ## Windows Launcher
 
-Use `Export-Solid-Step.bat`. It supports drag/drop of a `.wavecad.json`, otherwise it opens a file picker, builds the Docker image, and writes output to `exports/`.
+Click `Solid STEP Project` in the browser to download a `.solid-step.wavecad.json`, then drag it onto `Export-Solid-Step.bat`. The batch file also supports ordinary `.wavecad.json` files and opens a file picker when no file is dropped onto it.
 
 ## Acceptance Target
 

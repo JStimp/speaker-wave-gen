@@ -17,6 +17,19 @@
     downloadText(safeName(project.project.name || "wavegen3d") + ".wavecad.json", JSON.stringify(project, null, 2) + "\n", "application/json");
   }
 
+  function exportSolidStepProjectJson(project) {
+    const solidProject = JSON.parse(JSON.stringify(project));
+    solidProject.export = solidProject.export || {};
+    solidProject.export.solidResolution = solidProject.export.solidResolution || "fine";
+    solidProject.export.solidSurfaceControlLimit = solidProject.export.solidSurfaceControlLimit || 34;
+    solidProject.export.solidExporter = {
+      target: "outerSolidStep",
+      output: "exports/outer-solid.step",
+      launcher: "Export-Solid-Step.bat"
+    };
+    downloadText(safeName(solidProject.project.name || "wavegen3d") + ".solid-step.wavecad.json", JSON.stringify(solidProject, null, 2) + "\n", "application/json");
+  }
+
   function meshToObj(mesh, name) {
     const lines = ["o " + (name || "wavegen3d_mesh")];
     for (let i = 0; i < mesh.vertices.length; i += 3) {
@@ -328,6 +341,7 @@
   window.WaveExporters = {
     downloadText,
     exportProjectJson,
+    exportSolidStepProjectJson,
     exportObj,
     exportStl,
     exportStep,
