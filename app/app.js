@@ -18,6 +18,7 @@
   let selectedSourceKey = "driver:0";
   let activeDimension = null;
   let rebuildTimer = 0;
+  let viewInitialized = false;
   const labelWorldPosition = new THREE.Vector3();
   const rendererSize = new THREE.Vector2();
 
@@ -468,6 +469,10 @@
     mesh = Geometry.generatePreviewMesh(project);
     drawMesh(mesh);
     updateStats();
+    if (!viewInitialized) {
+      resetView();
+      viewInitialized = true;
+    }
   }
 
   function drawMesh(nextMesh) {
@@ -1014,8 +1019,10 @@
   function resetView() {
     const dims = project.cabinet.dimensions;
     const span = Math.max(dims.width, dims.height, dims.depth);
-    camera.position.set(span * 0.85, span * 1.08, span * 0.74);
-    controls.target.set(0, 0, dims.height / 2);
+    const targetZ = dims.height / 2;
+    const distance = span * 1.85;
+    camera.position.set(-distance, distance, targetZ + distance);
+    controls.target.set(0, 0, targetZ);
     controls.update();
   }
 
@@ -1116,6 +1123,10 @@
 
   function clamp01(value) {
     return Math.max(0, Math.min(1, value));
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
   }
 
   function updateCadLabelScales() {
