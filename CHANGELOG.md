@@ -19,6 +19,7 @@
 - Added corner wrap geometry for smoother wave continuity around softened cabinet edges.
 - Added JSON, OBJ, STL, experimental spline STEP, faceted STEP fallback, and PNG browser exports.
 - Added a Docker-only CadQuery/OCP solid STEP exporter with a drag/drop Windows launcher for SolidWorks outer-block solids.
+- Added an automatic Docker exporter fallback that writes a watertight faceted STEP solid when smooth spline surface sewing reports free edges.
 - Added a Solid STEP Project browser export that saves the `.wavecad.json` intended for the Docker solid exporter.
 - Added browser smoke test page and dependency-free solid-exporter geometry tests.
 - Reduced CI to static checks only.

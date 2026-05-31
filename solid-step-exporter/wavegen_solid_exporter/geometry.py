@@ -6,6 +6,14 @@ from pathlib import Path
 
 
 FACE_NAMES = ["front", "back", "left", "right", "top", "bottom"]
+FACE_OUTWARD_NORMALS = {
+    "front": (0, 1, 0),
+    "back": (0, -1, 0),
+    "left": (-1, 0, 0),
+    "right": (1, 0, 0),
+    "top": (0, 0, 1),
+    "bottom": (0, 0, -1),
+}
 RESOLUTION_PRESETS = {
     "draft": 10,
     "low": 16,
@@ -328,6 +336,152 @@ def generate_surface_grids(project, resolution=None, control_limit=None):
     return {"project": normalized, "dimensions": dims, "faces": grids, "summary": summarize(grids, heights)}
 
 
+def generate_faceted_mesh(project, resolution=None):
+    normalized = normalize_project(project)
+    dims = dimensions(normalized)
+    resolution = (
+        resolution
+        or normalized.get("export", {}).get("solidFacetResolution")
+        or normalized.get("export", {}).get("solidResolution")
+        or normalized.get("export", {}).get("resolution")
+        or "fine"
+    )
+    base_cells = resolution if isinstance(resolution, int) else RESOLUTION_PRESETS.get(str(resolution), RESOLUTION_PRESETS["fine"])
+    vertices = []
+    triangles = []
+    heights = []
+    face_ranges = {}
+
+    for face in FACE_NAMES:
+        grid = grid_for_face(face, dims, base_cells)
+        start_vertex = len(vertices)
+        face_ranges[face] = {"startVertex": start_vertex, "columns": grid["columns"], "rows": grid["rows"]}
+
+        for row in range(grid["rows"] + 1):
+            for column in range(grid["columns"] + 1):
+                point = point_on_face(face, column / grid["columns"], row / grid["rows"], dims, normalized)
+                wave = compute_wave_displacement(point, normalized)
+                vertices.append(displace_point(point, wave["displacement"]))
+                heights.append(wave["displacement"])
+
+        for row in range(grid["rows"]):
+            for column in range(grid["columns"]):
+                a = start_vertex + row * (grid["columns"] + 1) + column
+                b = a + 1
+                c = a + grid["columns"] + 1
+                d = c + 1
+                add_oriented_triangle(triangles, vertices, a, c, b, face)
+                add_oriented_triangle(triangles, vertices, b, c, d, face)
+
+    add_bottom_transition_faces(triangles, vertices, face_ranges)
+
+    return {
+        "project": normalized,
+        "dimensions": dims,
+        "vertices": vertices,
+        "triangles": triangles,
+        "faceRanges": face_ranges,
+        "summary": summarize_faceted_mesh(vertices, triangles, heights),
+    }
+
+
+def add_oriented_triangle(triangles, vertices, a, b, c, face):
+    expected = FACE_OUTWARD_NORMALS[face]
+    normal = triangle_normal(vertices[a], vertices[b], vertices[c])
+    if dot3(normal, expected) < 0:
+        triangles.append([a, c, b])
+    else:
+        triangles.append([a, b, c])
+
+
+def add_bottom_transition_faces(triangles, vertices, ranges):
+    bottom = ranges["bottom"]
+    front = ranges["front"]
+    back = ranges["back"]
+    left = ranges["left"]
+    right = ranges["right"]
+
+    add_transition_strip(
+        triangles,
+        vertices,
+        edge_indices(front, 0, "row"),
+        edge_indices(bottom, 0, "row"),
+        "front",
+    )
+    add_transition_strip(
+        triangles,
+        vertices,
+        edge_indices(back, 0, "row"),
+        list(reversed(edge_indices(bottom, bottom["rows"], "row"))),
+        "back",
+    )
+    add_transition_strip(
+        triangles,
+        vertices,
+        edge_indices(left, 0, "row"),
+        edge_indices(bottom, 0, "column"),
+        "left",
+    )
+    add_transition_strip(
+        triangles,
+        vertices,
+        edge_indices(right, 0, "row"),
+        edge_indices(bottom, bottom["columns"], "column"),
+        "right",
+    )
+
+
+def edge_indices(face_range, fixed_index, direction):
+    if direction == "row":
+        return [vertex_index(face_range, fixed_index, column) for column in range(face_range["columns"] + 1)]
+    return [vertex_index(face_range, row, fixed_index) for row in range(face_range["rows"] + 1)]
+
+
+def vertex_index(face_range, row, column):
+    return face_range["startVertex"] + row * (face_range["columns"] + 1) + column
+
+
+def add_transition_strip(triangles, vertices, side_edge, bottom_edge, face):
+    count = min(len(side_edge), len(bottom_edge))
+    for index in range(count - 1):
+        side_a = side_edge[index]
+        side_b = side_edge[index + 1]
+        bottom_a = bottom_edge[index]
+        bottom_b = bottom_edge[index + 1]
+        add_oriented_triangle(triangles, vertices, side_a, bottom_a, side_b, face)
+        add_oriented_triangle(triangles, vertices, side_b, bottom_a, bottom_b, face)
+
+
+def triangle_normal(a, b, c):
+    ab = {"x": b["x"] - a["x"], "y": b["y"] - a["y"], "z": b["z"] - a["z"]}
+    ac = {"x": c["x"] - a["x"], "y": c["y"] - a["y"], "z": c["z"] - a["z"]}
+    return {
+        "x": ab["y"] * ac["z"] - ab["z"] * ac["y"],
+        "y": ab["z"] * ac["x"] - ab["x"] * ac["z"],
+        "z": ab["x"] * ac["y"] - ab["y"] * ac["x"],
+    }
+
+
+def dot3(a, b):
+    return a["x"] * b[0] + a["y"] * b[1] + a["z"] * b[2]
+
+
+def summarize_faceted_mesh(vertices, triangles, heights):
+    min_height = min(heights) if heights else 0
+    max_height = max(heights) if heights else 0
+    min_z = min(point["z"] for point in vertices) if vertices else 0
+    max_z = max(point["z"] for point in vertices) if vertices else 0
+    return {
+        "vertexCount": len(vertices),
+        "triangleCount": len(triangles),
+        "minHeight": min_height,
+        "maxHeight": max_height,
+        "deviation": max_height - min_height,
+        "minZ": min_z,
+        "maxZ": max_z,
+    }
+
+
 def sample_indices(cell_count, control_limit):
     point_count = cell_count + 1
     target_count = max(4, min(control_limit, point_count))
@@ -384,6 +538,19 @@ def convert_grid_units(grids, factor):
     converted["dimensions"] = {key: value * factor for key, value in converted["dimensions"].items()}
     summary = converted["summary"]
     for key in ("minHeight", "maxHeight", "deviation", "minZ", "bottomCenterZ", "frontBottomY", "frontBottomZ"):
+        summary[key] *= factor
+    return converted
+
+
+def convert_mesh_units(mesh, factor):
+    converted = copy.deepcopy(mesh)
+    for point in converted["vertices"]:
+        point["x"] *= factor
+        point["y"] *= factor
+        point["z"] *= factor
+    converted["dimensions"] = {key: value * factor for key, value in converted["dimensions"].items()}
+    summary = converted["summary"]
+    for key in ("minHeight", "maxHeight", "deviation", "minZ", "maxZ"):
         summary[key] *= factor
     return converted
 
