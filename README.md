@@ -28,7 +28,8 @@ You can also open `app/index.html` directly in a browser.
 - Driver/source add/remove controls with selectable source chips and a focused source editor.
 - Advanced source controls for position, diameter, amplitude, wavelength, phase, and falloff.
 - Relief depth, flat-bottom, bias, normalization, preview resolution, export quality, and overlay controls.
-- Visual helpers for the origin, XYZ axes, outline box, floor grid, live dimension guides, and min/max relief analysis planes.
+- Visual helpers for a floor origin marker, offset XYZ direction triad, outline box, floor grid, slim dimension guides, and min/max relief analysis planes.
+- Hover tooltips on controls, including STEP-specific notes for export quality and spline controls.
 - Orbit/pan/zoom 3D viewport using vendored Three.js files.
 - Browser downloads for `.wavecad.json`, `.obj`, `.stl`, solid browser `.step`, optional Docker STEP project `.wavecad.json`, and preview `.png`.
 - OBJ/STL/browser STEP exports use a separate output quality setting, so they can be higher resolution than the live preview.

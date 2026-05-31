@@ -55,6 +55,45 @@ button.secondary {
   color: #cdd5c4;
 }
 
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]::after {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 7px);
+  z-index: 50;
+  width: max-content;
+  max-width: 280px;
+  padding: 8px 10px;
+  border: 1px solid rgba(118, 132, 116, 0.72);
+  border-radius: 5px;
+  background: rgba(12, 14, 13, 0.96);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34);
+  color: #e9eee4;
+  content: attr(data-tip);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-3px);
+  transition: opacity 120ms ease, transform 120ms ease;
+  white-space: normal;
+}
+
+[data-tip]:hover::after,
+[data-tip]:focus-within::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.actions [data-tip]::after {
+  left: auto;
+  right: 0;
+}
+
 .file-button input {
   display: none;
 }
@@ -216,6 +255,16 @@ select {
   padding: 0 9px;
   color: #eef2e8;
   background: #0f120f;
+}
+
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+label.muted {
+  color: #788174;
 }
 
 input:focus,

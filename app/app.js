@@ -94,10 +94,12 @@
     document.querySelectorAll("[data-path]").forEach((input) => {
       input.addEventListener("input", () => {
         setPath(project, input.dataset.path, valueFromInput(input));
+        updateControlAvailability();
         scheduleRebuild();
       });
       input.addEventListener("change", () => {
         setPath(project, input.dataset.path, valueFromInput(input));
+        updateControlAvailability();
         scheduleRebuild();
       });
     });
@@ -175,6 +177,16 @@
       else input.value = value;
     });
     renderSources();
+    updateControlAvailability();
+  }
+
+  function updateControlAvailability() {
+    const splineInput = document.querySelector('[data-path="export.surfaceControlLimit"]');
+    if (!splineInput) return;
+    const smoothMode = project.export && project.export.stepMode === "smoothSurfaceStep";
+    splineInput.disabled = !smoothMode;
+    const label = splineInput.closest("label");
+    if (label) label.classList.toggle("muted", !smoothMode);
   }
 
   function renderSources() {
@@ -444,24 +456,41 @@
     const group = new THREE.Group();
     const span = visualScale(dims);
     const scale = helperScale(dims);
-    const length = span * 0.32;
-    const originMaterial = new THREE.MeshStandardMaterial({ color: 0xf4f1df, emissive: 0x222018 });
-    const origin = new THREE.Mesh(new THREE.SphereGeometry(scale * 0.2, 20, 14), originMaterial);
-    group.add(origin);
+    const length = span * 0.2;
+    const pad = span * 0.13;
+    const triadOrigin = new THREE.Vector3(-dims.width / 2 - pad, -dims.depth / 2 - pad, scale * 0.08);
 
-    group.add(createAxisArrow(new THREE.Vector3(1, 0, 0), length, 0xf05b4f, "X", scale));
-    group.add(createAxisArrow(new THREE.Vector3(0, 1, 0), length, 0x54c46b, "Y", scale));
-    group.add(createAxisArrow(new THREE.Vector3(0, 0, 1), length, 0x4f8df0, "Z", scale));
-    group.add(createLabelSprite("Origin", "#f4f1df", new THREE.Vector3(scale * 0.55, scale * 0.55, scale * 0.55), scale * 2.1, scale * 0.72));
+    group.add(createOriginMarker(scale));
+    group.add(createAxisArrow(triadOrigin, new THREE.Vector3(1, 0, 0), length, 0xf05b4f, "X", scale));
+    group.add(createAxisArrow(triadOrigin, new THREE.Vector3(0, 1, 0), length, 0x54c46b, "Y", scale));
+    group.add(createAxisArrow(triadOrigin, new THREE.Vector3(0, 0, 1), length, 0x4f8df0, "Z", scale));
     return group;
   }
 
-  function createAxisArrow(direction, length, color, label, scale) {
+  function createOriginMarker(scale) {
     const group = new THREE.Group();
-    const arrow = new THREE.ArrowHelper(direction, new THREE.Vector3(0, 0, 0), length, color, scale * 0.8, scale * 0.38);
-    const labelPosition = direction.clone().multiplyScalar(length + scale * 0.7);
+    const material = new THREE.MeshBasicMaterial({ color: 0xf4f1df, transparent: true, opacity: 0.92 });
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(scale * 0.28, scale * 0.022, 8, 36), material);
+    ring.position.z = scale * 0.03;
+    group.add(ring);
+
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xf4f1df, transparent: true, opacity: 0.56 });
+    const half = scale * 0.42;
+    [
+      [new THREE.Vector3(-half, 0, scale * 0.035), new THREE.Vector3(half, 0, scale * 0.035)],
+      [new THREE.Vector3(0, -half, scale * 0.035), new THREE.Vector3(0, half, scale * 0.035)]
+    ].forEach((points) => {
+      group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), lineMaterial));
+    });
+    return group;
+  }
+
+  function createAxisArrow(origin, direction, length, color, label, scale) {
+    const group = new THREE.Group();
+    const arrow = new THREE.ArrowHelper(direction, origin, length, color, scale * 0.52, scale * 0.23);
+    const labelPosition = origin.clone().add(direction.clone().multiplyScalar(length + scale * 0.32));
     group.add(arrow);
-    group.add(createLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), labelPosition, scale * 0.9, scale * 0.9));
+    group.add(createCadLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), labelPosition, scale * 0.8, scale * 0.52));
     return group;
   }
 
@@ -469,7 +498,7 @@
     const group = new THREE.Group();
     const span = visualScale(dims);
     const scale = helperScale(dims);
-    const offset = span * 0.16;
+    const offset = span * 0.2;
     const w = dims.width / 2;
     const d = dims.depth / 2;
     const h = dims.height;
@@ -511,12 +540,12 @@
     const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
     const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
     group.add(new THREE.Line(geometry, material));
-    group.add(createGuideCone(end, direction, color, opacity, scale));
-    group.add(createGuideCone(start, direction.clone().multiplyScalar(-1), color, opacity, scale));
+    group.add(createGuideTick(end, direction, color, opacity, scale));
+    group.add(createGuideTick(start, direction, color, opacity, scale));
 
     const midpoint = start.clone().lerp(end, 0.5);
-    const labelOffset = new THREE.Vector3(0, 0, active ? scale * 0.78 : scale * 0.56);
-    group.add(createLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), midpoint.add(labelOffset), active ? scale * 5.8 : scale * 5.0, scale * 1.0));
+    const labelOffset = new THREE.Vector3(0, 0, active ? scale * 0.64 : scale * 0.5);
+    group.add(createCadLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), midpoint.add(labelOffset), active ? scale * 3.4 : scale * 3.1, scale * 0.54));
     return group;
   }
 
@@ -565,7 +594,7 @@
 
     if (face === "front" || face === "right" || face === "top") {
       const labelPosition = frame.center.clone().add(frame.normal.clone().multiplyScalar(scale * 0.7));
-      group.add(createLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), labelPosition, scale * 4.3, scale * 0.78));
+      group.add(createCadLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), labelPosition, scale * 3.1, scale * 0.5));
     }
 
     return group;
@@ -647,33 +676,30 @@
     return new THREE.BufferGeometry().setFromPoints(corners);
   }
 
-  function createGuideCone(position, direction, color, opacity, scale) {
-    const geometry = new THREE.ConeGeometry(scale * 0.22, scale * 0.58, 18);
-    const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity });
-    const cone = new THREE.Mesh(geometry, material);
-    cone.position.copy(position);
-    cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize());
-    return cone;
+  function createGuideTick(position, direction, color, opacity, scale) {
+    const up = Math.abs(direction.z) < 0.75 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(1, 0, 0);
+    const tick = new THREE.Vector3().crossVectors(direction, up).normalize().multiplyScalar(scale * 0.32);
+    const geometry = new THREE.BufferGeometry().setFromPoints([
+      position.clone().sub(tick),
+      position.clone().add(tick)
+    ]);
+    const material = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+    return new THREE.Line(geometry, material);
   }
 
-  function createLabelSprite(text, color, position, width, height) {
+  function createCadLabelSprite(text, color, position, width, height) {
     const canvas = document.createElement("canvas");
-    const canvasWidth = 320;
-    const canvasHeight = 76;
+    const canvasWidth = 360;
+    const canvasHeight = 96;
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
     const ctx = canvas.getContext("2d");
-    ctx.font = "600 24px Segoe UI, sans-serif";
+    ctx.font = "700 28px Segoe UI, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = "rgba(17, 18, 16, 0.72)";
-    roundRect(ctx, 2, 2, canvasWidth - 4, canvasHeight - 4, 18);
-    ctx.fill();
-    ctx.strokeStyle = color;
-    ctx.globalAlpha = 0.9;
-    roundRect(ctx, 3, 3, canvasWidth - 6, canvasHeight - 6, 18);
-    ctx.stroke();
-    ctx.globalAlpha = 1;
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = "rgba(8, 10, 9, 0.82)";
+    ctx.strokeText(text, canvasWidth / 2, canvasHeight / 2);
     ctx.fillStyle = color;
     ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
 
@@ -683,20 +709,6 @@
     sprite.position.copy(position);
     sprite.scale.set(width, height, 1);
     return sprite;
-  }
-
-  function roundRect(ctx, x, y, width, height, radius) {
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    ctx.lineTo(x + width, y + height - radius);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    ctx.lineTo(x + radius, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
-    ctx.closePath();
   }
 
   function createSurface(nextMesh) {
@@ -772,7 +784,7 @@
       sphere.userData.sourceKey = source.key;
       group.add(sphere);
       if (selected) {
-        group.add(createLabelSprite(source.label || source.id, colorCss(color), new THREE.Vector3(source.center.x, dims.depth / 2 + scale * 0.13, source.center.z + helperScale(dims) * 0.9), helperScale(dims) * 4.8, helperScale(dims) * 0.95));
+        group.add(createCadLabelSprite(source.label || source.id, colorCss(color), new THREE.Vector3(source.center.x, dims.depth / 2 + scale * 0.13, source.center.z + helperScale(dims) * 0.9), helperScale(dims) * 3.2, helperScale(dims) * 0.56));
       }
     });
     return group;

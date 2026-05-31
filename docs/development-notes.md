@@ -19,6 +19,8 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added side-panel controls to add/remove drivers and point sources.
 - Added a flat-bottom option that keeps the underside contact patch planar for real-world placement and rounds the lower perimeter inward and upward.
 - Added preview aids: outline box, XYZ origin axes, floor grid toggle, front-facing reset view, dimension guide overlays, and relief analysis planes tied to live deviation stats.
+- Split the origin visualization into a small floor marker and separate offset XYZ direction triad, and changed in-scene labels to slimmer CAD-style text.
+- Added hover tooltips throughout the UI, including a clarification that spline controls only affect the spline surface STEP experiment and not the default solid browser STEP.
 - Changed the coordinate system to X width, Y depth, Z height with the origin at the floor center.
 - Added inches as the default unit plus inch/mm conversion in the project controls.
 - Added focused source editing with selectable source chips and preview source marker selection.
