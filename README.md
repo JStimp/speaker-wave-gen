@@ -33,6 +33,7 @@ You can also open `app/index.html` directly in a browser.
 - Browser downloads for `.wavecad.json`, `.obj`, `.stl`, solid browser `.step`, optional Docker STEP project `.wavecad.json`, and preview `.png`.
 - OBJ/STL/browser STEP exports use a separate output quality setting, so they can be higher resolution than the live preview.
 - Higher default preview/detail settings for inspecting wave relief without immediately changing controls.
+- Default STEP export uses a lighter solid setting for faster SolidWorks import; higher settings are available when checking final fidelity.
 - Docker-based SolidWorks export through `Export-Solid-Step.bat`, which remains available as a separate experiment.
 
 ## Repository Layout
@@ -65,7 +66,7 @@ It checks that the default project loads, mesh vertices are finite, rounded fron
 
 ## STEP Direction
 
-The static app defaults to the browser solid STEP output because that path is currently the useful SolidWorks import target. The spline-surface STEP mode and Docker exporter are still available as experiments:
+The static app defaults to the browser solid STEP output because that path is currently the useful SolidWorks import target. Smooth reliable solid STEP remains the overall goal; the spline-surface STEP mode and Docker exporter are still available as experiments:
 
 ```text
 Export-Solid-Step.bat

@@ -90,7 +90,7 @@
     },
     export: {
       formats: ["json", "obj", "stl", "step"],
-      resolution: "inspection",
+      resolution: "high",
       stepMode: "facetedSolidStep",
       surfaceControlLimit: 34
     }

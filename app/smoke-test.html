@@ -55,7 +55,7 @@
         check("default browser STEP mode is solid", project.export.stepMode === "facetedSolidStep");
         check("mesh has finite vertices", mesh.vertices.length > 0 && mesh.vertices.every(Number.isFinite));
         check("mesh summary includes relief deviation", mesh.summary.deviation > 0 && mesh.summary.maxAbsHeight > 0);
-        check("export mesh is higher resolution than preview", exportMesh.summary.triangleCount > mesh.summary.triangleCount);
+        check("default STEP export stays import-sized", exportMesh.summary.triangleCount < 25000);
         check("front/right seam heights match", Math.abs(frontHeight - rightHeight) < 1e-9);
         check("bottom front edge rounds inward and upward", frontFloor.position.y < halfDepth && frontFloor.position.z > 0);
         check("lower rounded edge relief does not flare outward", frontFloorHeight <= 0);

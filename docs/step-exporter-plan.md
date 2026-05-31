@@ -1,6 +1,6 @@
 # STEP Solid Exporter
 
-The static prototype now defaults to the browser solid STEP path because that is the current useful SolidWorks output. This Docker exporter remains a separate experiment for a later analytic/CAD-kernel solid path.
+The static prototype now defaults to the browser solid STEP path because that is the current useful SolidWorks output. Smooth, reliable SolidWorks solid STEP is still the overall CAD goal. The current faceted browser STEP is a compatibility milestone while the Docker/CAD-kernel path works toward a smoother editable solid.
 
 ## Goal
 
@@ -33,6 +33,7 @@ WaveGen3D .wavecad.json
 - Outer solid block only.
 - Hollow wall thickness, driver cutouts, and separated panel STEP exports are later stages.
 - The browser solid STEP button is the current primary prototype output. The Docker path is optional while the CAD-kernel approach is proven out.
+- Very dense faceted STEP files can import slowly because each triangle becomes a CAD face. Use higher faceted export settings only when testing final surface fidelity.
 
 ## Windows Launcher
 
@@ -50,6 +51,7 @@ Click `Docker JSON` in the browser to download a `.solid-step.wavecad.json`, the
 ## Non-Goals For Prototype
 
 - No claim that browser-generated faceted STEP is the final smooth/editable manufacturing CAD.
+- The long-term target is a validated smooth solid BREP with matched boundary curves/surfaces, zero free edges, and reliable SolidWorks import as one solid body.
 - No Docker requirement to open or preview the app.
 
 ## Current Browser STEP

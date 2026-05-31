@@ -17,6 +17,7 @@
 - Improved wave height visualization with computed preview normals and contrast color modes.
 - Added independent export quality so outputs can be denser than preview.
 - Raised preview/detail presets and updated the starter cabinet/source settings for a stronger default wave pattern.
+- Set the default browser solid STEP export to `high` quality so SolidWorks imports stay usable while higher settings remain available for final tests.
 - Added corner wrap geometry for smoother wave continuity around softened cabinet edges.
 - Added JSON, OBJ, STL, solid browser STEP, experimental spline STEP, and PNG browser exports.
 - Added a Docker-only CadQuery/OCP solid STEP exporter with a drag/drop Windows launcher for SolidWorks outer-block solids.
