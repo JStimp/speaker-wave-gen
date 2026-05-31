@@ -18,11 +18,14 @@
   let selectedSourceKey = "driver:0";
   let activeDimension = null;
   let rebuildTimer = 0;
+  const labelWorldPosition = new THREE.Vector3();
+  const rendererSize = new THREE.Vector2();
 
   window.addEventListener("DOMContentLoaded", init);
 
   function init() {
     initThree();
+    initTooltipSystem();
     bindControls();
     syncForm();
     rebuild();
@@ -168,6 +171,110 @@
     document.getElementById("load-project").addEventListener("change", loadProjectFile);
   }
 
+  function initTooltipSystem() {
+    const tooltip = document.createElement("div");
+    tooltip.id = "floating-tooltip";
+    tooltip.className = "floating-tooltip";
+    tooltip.hidden = true;
+    document.body.appendChild(tooltip);
+    document.addEventListener("pointerdown", hideTooltip, true);
+    window.addEventListener("resize", hideTooltip);
+    window.addEventListener("blur", hideTooltip);
+    prepareTooltips(document);
+  }
+
+  function prepareTooltips(root) {
+    root.querySelectorAll("[data-tip]").forEach((element) => {
+      if (element.classList.contains("tip-target")) {
+        bindTooltipTarget(element);
+        return;
+      }
+
+      const tip = element.getAttribute("data-tip");
+      element.removeAttribute("data-tip");
+      const target = getTooltipTarget(element);
+      if (!target) return;
+      target.classList.add("tip-target");
+      target.dataset.tip = tip;
+      bindTooltipTarget(target);
+    });
+  }
+
+  function getTooltipTarget(element) {
+    const directTipTarget = Array.from(element.children).find((child) => child.classList && child.classList.contains("tip-target"));
+    if (directTipTarget) return directTipTarget;
+
+    const labelSpan = Array.from(element.children).find((child) => {
+      return child.tagName === "SPAN" && child.classList && !child.classList.contains("axis-dot") && !child.classList.contains("source-swatch");
+    });
+    if (labelSpan) return labelSpan;
+
+    return wrapTextNodes(element);
+  }
+
+  function wrapTextNodes(element) {
+    const textNodes = Array.from(element.childNodes).filter((node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+    if (!textNodes.length) return null;
+
+    const span = document.createElement("span");
+    span.className = "tip-copy";
+    textNodes[0].parentNode.insertBefore(span, textNodes[0]);
+    textNodes.forEach((node, index) => {
+      const text = node.textContent.trim();
+      if (text) {
+        if (index > 0 && span.textContent) span.appendChild(document.createTextNode(" "));
+        span.appendChild(document.createTextNode(text));
+      }
+      node.parentNode.removeChild(node);
+    });
+    return span;
+  }
+
+  function bindTooltipTarget(target) {
+    if (target.dataset.tipBound === "true") return;
+    target.dataset.tipBound = "true";
+    target.addEventListener("pointerenter", () => showTooltip(target));
+    target.addEventListener("pointermove", () => placeTooltip(target));
+    target.addEventListener("pointerleave", hideTooltip);
+    target.addEventListener("pointerdown", hideTooltip);
+  }
+
+  function showTooltip(target) {
+    const tooltip = document.getElementById("floating-tooltip");
+    if (!tooltip || !target.dataset.tip) return;
+    tooltip.textContent = target.dataset.tip;
+    tooltip.hidden = false;
+    tooltip.classList.add("visible");
+    placeTooltip(target);
+  }
+
+  function hideTooltip() {
+    const tooltip = document.getElementById("floating-tooltip");
+    if (!tooltip) return;
+    tooltip.classList.remove("visible");
+    tooltip.hidden = true;
+  }
+
+  function placeTooltip(target) {
+    const tooltip = document.getElementById("floating-tooltip");
+    if (!tooltip || tooltip.hidden) return;
+    const rect = target.getBoundingClientRect();
+    const pad = 12;
+    tooltip.style.left = "0";
+    tooltip.style.top = "0";
+    const tipRect = tooltip.getBoundingClientRect();
+    let left = rect.left + rect.width / 2 - tipRect.width / 2;
+    let top = rect.bottom + 8;
+
+    if (left + tipRect.width > window.innerWidth - pad) left = window.innerWidth - tipRect.width - pad;
+    if (left < pad) left = pad;
+    if (top + tipRect.height > window.innerHeight - pad) top = rect.top - tipRect.height - 8;
+    if (top < pad) top = pad;
+
+    tooltip.style.left = Math.round(left) + "px";
+    tooltip.style.top = Math.round(top) + "px";
+  }
+
   function syncForm() {
     document.getElementById("project-name").value = project.project.name;
     document.getElementById("unit-select").value = project.units || "in";
@@ -224,6 +331,7 @@
     const selected = entries.find((entry) => entry.key === selectedSourceKey) || entries[0];
     editor.style.setProperty("--source-color", colorCss(selected.color));
     editor.innerHTML = sourceEditorTemplate(selected);
+    prepareTooltips(editor);
 
     editor.querySelectorAll("[data-source-field]").forEach((input) => {
       input.addEventListener("input", () => updateSourceFromInput(input));
@@ -311,26 +419,26 @@
     const remove = '<button class="remove" type="button" data-remove-source data-source-type="' + entry.type + '" data-index="' + entry.index + '">Remove</button>';
     return [
       '<div class="source-editor-header"><span class="source-swatch"></span><strong>' + escapeHtml(entry.label) + '</strong>' + remove + '</div>',
-      '<label class="check"><input data-source-field="enabled" data-source-type="' + entry.type + '" data-index="' + entry.index + '" type="checkbox" ' + (source.enabled !== false ? "checked" : "") + '> Enabled</label>',
+      '<label class="check" data-tip="Turns this wave source on or off without deleting it."><input data-source-field="enabled" data-source-type="' + entry.type + '" data-index="' + entry.index + '" type="checkbox" ' + (source.enabled !== false ? "checked" : "") + '> Enabled</label>',
       '<div class="grid-2">',
-      textField("Name", "label", entry.label, entry.type, entry.index),
-      field("X", "x", center.x, entry.type, entry.index, lengthStep()),
-      field("Z height", "z", center.z, entry.type, entry.index, lengthStep()),
-      entry.type === "driver" ? field("Diameter", "diameter", item.diameter, entry.type, entry.index, lengthStep()) : "",
-      field("Amplitude", "amplitude", source.amplitude, entry.type, entry.index, smallLengthStep()),
-      field("Wavelength", "wavelength", source.wavelength, entry.type, entry.index, lengthStep()),
-      field("Phase", "phase", source.phase, entry.type, entry.index, 0.1),
-      field("Falloff", "falloff", source.falloff, entry.type, entry.index, 0.0001),
+      textField("Name", "label", entry.label, entry.type, entry.index, "Display name for this source marker and editor tab."),
+      field("X", "x", center.x, entry.type, entry.index, lengthStep(), "Horizontal source position on the front face, centered at X=0."),
+      field("Z height", "z", center.z, entry.type, entry.index, lengthStep(), "Height of the source above the flat floor plane."),
+      entry.type === "driver" ? field("Diameter", "diameter", item.diameter, entry.type, entry.index, lengthStep(), "Visual driver/cutout reference ring diameter.") : "",
+      field("Amplitude", "amplitude", source.amplitude, entry.type, entry.index, smallLengthStep(), "How strongly this source pushes or pulls the surface relief."),
+      field("Wavelength", "wavelength", source.wavelength, entry.type, entry.index, lengthStep(), "Distance between wave ridges from this source."),
+      field("Phase", "phase", source.phase, entry.type, entry.index, 0.1, "Shifts this source wave forward/backward without moving the source."),
+      field("Falloff", "falloff", source.falloff, entry.type, entry.index, 0.0001, "How quickly this source fades with surface distance. Lower values carry farther."),
       "</div>"
     ].join("");
   }
 
-  function field(label, fieldName, value, type, index, step) {
-    return '<label>' + label + '<input data-source-field="' + fieldName + '" data-source-type="' + type + '" data-index="' + index + '" type="number" step="' + step + '" value="' + value + '"></label>';
+  function field(label, fieldName, value, type, index, step, tip) {
+    return '<label data-tip="' + escapeHtml(tip) + '">' + label + '<input data-source-field="' + fieldName + '" data-source-type="' + type + '" data-index="' + index + '" type="number" step="' + step + '" value="' + value + '"></label>';
   }
 
-  function textField(label, fieldName, value, type, index) {
-    return '<label>' + label + '<input data-source-field="' + fieldName + '" data-source-type="' + type + '" data-index="' + index + '" type="text" value="' + escapeHtml(value) + '"></label>';
+  function textField(label, fieldName, value, type, index, tip) {
+    return '<label data-tip="' + escapeHtml(tip) + '">' + label + '<input data-source-field="' + fieldName + '" data-source-type="' + type + '" data-index="' + index + '" type="text" value="' + escapeHtml(value) + '"></label>';
   }
 
   function updateSourceFromInput(input) {
@@ -373,12 +481,12 @@
 
     if (grid) {
       grid.visible = project.preview.showGrid !== false;
-      const gridSpan = Math.max(dims.width, dims.depth) * 1.8;
+      const gridSpan = buildAreaSpan(dims);
       grid.scale.setScalar(gridSpan / 1100);
       grid.position.z = 0;
     }
     if (project.preview.showOutline) previewRoot.add(createOutlineBox(dims));
-    if (project.preview.showAxes) previewRoot.add(createAxes(dims));
+    if (project.preview.showAxes) previewRoot.add(createAxes(dims, buildAreaSpan(dims)));
     if (project.preview.showDimensions) previewRoot.add(createDimensionGuides(dims));
     previewRoot.add(createSurface(nextMesh));
     if (project.preview.showAnalysis) previewRoot.add(createAnalysisPlanes(nextMesh, dims));
@@ -423,7 +531,7 @@
     if (format === "stl") Exporters.exportStl(project, outputMesh);
     if (format === "step") Exporters.exportStep(project, outputMesh);
     const stepKind = format === "step"
-      ? (project.export.stepMode === "facetedSolidStep" ? " solid browser" : " spline surface")
+      ? (project.export.stepMode === "smoothSurfaceStep" ? " smooth surface" : " faceted fallback")
       : "";
     setExportStatus(
       format.toUpperCase() + stepKind + " export built at " + resolution + " quality (" +
@@ -452,19 +560,34 @@
     return box;
   }
 
-  function createAxes(dims) {
+  function createAxes(dims, buildSpan) {
     const group = new THREE.Group();
     const span = visualScale(dims);
     const scale = helperScale(dims);
-    const length = span * 0.2;
-    const pad = span * 0.13;
-    const triadOrigin = new THREE.Vector3(-dims.width / 2 - pad, -dims.depth / 2 - pad, scale * 0.08);
+    const length = Math.max(span * 0.18, scale * 4);
+    const inset = Math.max(scale * 1.05, buildSpan * 0.035);
+    const triadOrigin = new THREE.Vector3(-buildSpan / 2 + inset, -buildSpan / 2 + inset, scale * 0.08);
 
     group.add(createOriginMarker(scale));
+    group.add(createBuildCornerMarker(buildSpan, scale));
     group.add(createAxisArrow(triadOrigin, new THREE.Vector3(1, 0, 0), length, 0xf05b4f, "X", scale));
     group.add(createAxisArrow(triadOrigin, new THREE.Vector3(0, 1, 0), length, 0x54c46b, "Y", scale));
     group.add(createAxisArrow(triadOrigin, new THREE.Vector3(0, 0, 1), length, 0x4f8df0, "Z", scale));
     return group;
+  }
+
+  function createBuildCornerMarker(buildSpan, scale) {
+    const corner = -buildSpan / 2;
+    const leg = Math.max(buildSpan * 0.12, scale * 2.8);
+    const z = scale * 0.025;
+    const points = [
+      new THREE.Vector3(corner, corner + leg, z),
+      new THREE.Vector3(corner, corner, z),
+      new THREE.Vector3(corner + leg, corner, z)
+    ];
+    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+    const material = new THREE.LineBasicMaterial({ color: 0xe9e2bb, transparent: true, opacity: 0.5 });
+    return new THREE.Line(geometry, material);
   }
 
   function createOriginMarker(scale) {
@@ -490,7 +613,7 @@
     const arrow = new THREE.ArrowHelper(direction, origin, length, color, scale * 0.52, scale * 0.23);
     const labelPosition = origin.clone().add(direction.clone().multiplyScalar(length + scale * 0.32));
     group.add(arrow);
-    group.add(createCadLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), labelPosition, scale * 0.8, scale * 0.52));
+    group.add(createCadLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), labelPosition, 1.45, 22));
     return group;
   }
 
@@ -545,7 +668,7 @@
 
     const midpoint = start.clone().lerp(end, 0.5);
     const labelOffset = new THREE.Vector3(0, 0, active ? scale * 0.64 : scale * 0.5);
-    group.add(createCadLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), midpoint.add(labelOffset), active ? scale * 3.4 : scale * 3.1, scale * 0.54));
+    group.add(createCadLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), midpoint.add(labelOffset), 5.75, active ? 27 : 24));
     return group;
   }
 
@@ -594,7 +717,7 @@
 
     if (face === "front" || face === "right" || face === "top") {
       const labelPosition = frame.center.clone().add(frame.normal.clone().multiplyScalar(scale * 0.7));
-      group.add(createCadLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), labelPosition, scale * 3.1, scale * 0.5));
+      group.add(createCadLabelSprite(label, "#" + color.toString(16).padStart(6, "0"), labelPosition, 5.4, 22));
     }
 
     return group;
@@ -687,27 +810,45 @@
     return new THREE.Line(geometry, material);
   }
 
-  function createCadLabelSprite(text, color, position, width, height) {
+  function createCadLabelSprite(text, color, position, aspect, pixelHeight) {
     const canvas = document.createElement("canvas");
-    const canvasWidth = 360;
-    const canvasHeight = 96;
+    const canvasWidth = 1024;
+    const canvasHeight = 256;
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
     const ctx = canvas.getContext("2d");
-    ctx.font = "700 28px Segoe UI, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.lineWidth = 5;
+    const maxTextWidth = canvasWidth * 0.86;
+    let fontSize = 94;
+    do {
+      ctx.font = "650 " + fontSize + "px Segoe UI Variable, Segoe UI, Arial, sans-serif";
+      fontSize -= 4;
+    } while (fontSize > 42 && ctx.measureText(text).width > maxTextWidth);
+    ctx.lineJoin = "round";
+    ctx.lineWidth = Math.max(8, fontSize * 0.18);
     ctx.strokeStyle = "rgba(8, 10, 9, 0.82)";
     ctx.strokeText(text, canvasWidth / 2, canvasHeight / 2);
     ctx.fillStyle = color;
     ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
 
     const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    if (renderer && renderer.capabilities) {
+      texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    }
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false });
     const sprite = new THREE.Sprite(material);
     sprite.position.copy(position);
-    sprite.scale.set(width, height, 1);
+    sprite.renderOrder = 20;
+    sprite.userData.cadLabel = {
+      aspect,
+      pixelHeight,
+      minWorldHeight: helperScale(project.cabinet.dimensions) * 0.22,
+      maxWorldHeight: helperScale(project.cabinet.dimensions) * 2.8
+    };
+    updateCadLabelScale(sprite);
     return sprite;
   }
 
@@ -784,7 +925,7 @@
       sphere.userData.sourceKey = source.key;
       group.add(sphere);
       if (selected) {
-        group.add(createCadLabelSprite(source.label || source.id, colorCss(color), new THREE.Vector3(source.center.x, dims.depth / 2 + scale * 0.13, source.center.z + helperScale(dims) * 0.9), helperScale(dims) * 3.2, helperScale(dims) * 0.56));
+        group.add(createCadLabelSprite(source.label || source.id, colorCss(color), new THREE.Vector3(source.center.x, dims.depth / 2 + scale * 0.13, source.center.z + helperScale(dims) * 0.9), 5.2, 24));
       }
     });
     return group;
@@ -866,6 +1007,7 @@
   function animate() {
     requestAnimationFrame(animate);
     controls.update();
+    updateCadLabelScales();
     renderer.render(scene, camera);
   }
 
@@ -878,6 +1020,7 @@
   }
 
   function saveScreenshot() {
+    updateCadLabelScales();
     renderer.render(scene, camera);
     const link = document.createElement("a");
     link.href = renderer.domElement.toDataURL("image/png");
@@ -947,6 +1090,10 @@
     return Math.max(dims.width, dims.height, dims.depth, 1);
   }
 
+  function buildAreaSpan(dims) {
+    return Math.max(dims.width, dims.depth, 1) * 2.05;
+  }
+
   function helperScale(dims) {
     return Math.max(visualScale(dims) * 0.045, project.units === "mm" ? 12 : 0.45);
   }
@@ -969,6 +1116,25 @@
 
   function clamp01(value) {
     return Math.max(0, Math.min(1, value));
+  }
+
+  function updateCadLabelScales() {
+    if (!previewRoot) return;
+    previewRoot.traverse((object) => {
+      if (object.userData && object.userData.cadLabel) updateCadLabelScale(object);
+    });
+  }
+
+  function updateCadLabelScale(sprite) {
+    if (!renderer || !camera || !sprite.userData || !sprite.userData.cadLabel) return;
+    const data = sprite.userData.cadLabel;
+    const height = renderer.getSize(rendererSize).height || renderer.domElement.clientHeight || 1;
+    sprite.getWorldPosition(labelWorldPosition);
+    const distance = Math.max(0.001, camera.position.distanceTo(labelWorldPosition));
+    const fovRadians = camera.fov * Math.PI / 180;
+    const visibleHeight = 2 * distance * Math.tan(fovRadians / 2);
+    const worldHeight = clamp(visibleHeight * (data.pixelHeight / height), data.minWorldHeight, data.maxWorldHeight);
+    sprite.scale.set(worldHeight * data.aspect, worldHeight, 1);
   }
 
   function convertProjectUnits(target, from, to) {

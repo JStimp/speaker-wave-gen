@@ -7,7 +7,7 @@ The static app exports:
 - `.wavecad.json`
 - `.obj`
 - `.stl`
-- experimental browser `.step`
+- Smooth surface browser `.step`
 - Solid STEP project `.wavecad.json`
 - `.png` preview screenshot
 
@@ -19,10 +19,10 @@ OBJ, STL, and STEP exports rebuild from the selected export quality rather than 
 
 The browser app includes two in-house STEP modes:
 
-- Experimental spline surfaces: a hand-written BREP shell built from spline surface faces. SolidWorks may import this as surface bodies.
+- Smooth surface STEP: the default hand-written BREP built from spline surface faces for lower-entity SolidWorks tests.
 - Faceted solid fallback: a triangular BREP retained for troubleshooting import problems.
 
-For SolidWorks solid-body import, click `Solid STEP Project` in the browser, then drag the downloaded `.solid-step.wavecad.json` onto `Export-Solid-Step.bat`. That Docker path runs a real OpenCascade-based sewing and validation step and writes `exports/outer-solid.step` plus `exports/outer-solid.report.json`.
+For the separate CAD-kernel path, click `Docker JSON` in the browser, then drag the downloaded `.solid-step.wavecad.json` onto `Export-Solid-Step.bat`. That Docker path runs OpenCascade-based sewing and validation and writes `exports/outer-solid.step` plus `exports/outer-solid.report.json`.
 
 ## Panel Strategy
 

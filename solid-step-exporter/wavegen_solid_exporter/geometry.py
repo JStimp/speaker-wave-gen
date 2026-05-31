@@ -54,7 +54,7 @@ DEFAULT_PROJECT = {
         "minThickness": 0.5,
     },
     "preview": {"resolution": "ultra"},
-    "export": {"resolution": "high", "solidResolution": "fine", "solidSurfaceControlLimit": 34, "stepMode": "facetedSolidStep"},
+    "export": {"resolution": "high", "solidResolution": "fine", "solidSurfaceControlLimit": 34, "stepMode": "smoothSurfaceStep"},
 }
 
 

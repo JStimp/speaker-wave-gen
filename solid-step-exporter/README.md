@@ -1,6 +1,6 @@
 # WaveGen3D Solid STEP Exporter
 
-This is the Docker-only CAD-kernel export experiment. The normal browser app still opens directly with `Launch-WaveGen3D.bat`, does not require Docker, and currently uses the browser solid STEP path as the primary prototype output.
+This is the Docker-only CAD-kernel export experiment. The normal browser app still opens directly with `Launch-WaveGen3D.bat`, does not require Docker, and currently uses Smooth surface browser STEP as the primary prototype output.
 
 ## Output
 

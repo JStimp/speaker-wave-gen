@@ -9,7 +9,7 @@ WaveGen3D is a static browser prototype. The first priority is a stable app that
 - Static browser UI in `app/`.
 - Vendored Three.js files in `app/vendor/`.
 - Browser-side geometry math in `app/geometry.js`.
-- Browser-side JSON/OBJ/STL/experimental STEP exporters in `app/exporters.js`.
+- Browser-side JSON/OBJ/STL/Smooth surface STEP exporters in `app/exporters.js`.
 - Docker-only CAD-kernel STEP solid exporter in `solid-step-exporter/`.
 
 ## Data Flow
@@ -47,7 +47,7 @@ Projects default to inches. Switching between inches and millimeters converts ca
 
 ## Preview Aids
 
-The viewer can draw an original-size outline box, RGB XYZ origin axes, a floor grid on `Z=0`, live dimension guide lines, and relief analysis planes. The width, depth, and height controls are keyed to those same axis colors so it is clear which model direction will change.
+The viewer can draw an original-size outline box, a small floor origin marker, an offset RGB XYZ direction triad, a floor grid on `Z=0`, live dimension guide lines, and relief analysis planes. The width, depth, and height controls are keyed to those same axis colors so it is clear which model direction will change.
 
 Analysis planes show the current min/max relief offsets around the cabinet, while the View Tools panel reports total deviation, max outward, max inward, and max absolute relief in the active units.
 
@@ -57,4 +57,4 @@ Preview mesh resolution and output mesh quality are separate. The preview can st
 
 ## Stability Boundary
 
-The active browser prototype has no Node, npm, Vite, Rollup, Electron, Python, Docker, or CAD-kernel dependency. SolidWorks solid STEP export is a separate Docker path that reads saved `.wavecad.json` files and writes `outer-solid.step`.
+The active browser prototype has no Node, npm, Vite, Rollup, Electron, Python, Docker, or CAD-kernel dependency. Smooth surface browser STEP is available directly in the app. The separate Docker CAD-kernel path reads saved `.wavecad.json` files and writes `outer-solid.step`.

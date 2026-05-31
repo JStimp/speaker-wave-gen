@@ -18,7 +18,7 @@
             Load JSON
             <input id="load-project" type="file" accept=".json,.wavecad.json">
           </label>
-          <button id="export-step" class="primary" type="button" data-tip="Download the current cabinet as a browser-generated solid STEP. Higher export quality creates more CAD faces and imports slower.">Export STEP</button>
+          <button id="export-step" class="primary" type="button" data-tip="Download the current cabinet as a Smooth surface STEP by default. Use the faceted fallback only if a CAD import needs it.">Export STEP</button>
           <button id="save-json" type="button" data-tip="Save the editable WaveGen3D project file.">Save Project</button>
           <button id="export-obj" class="secondary" type="button" data-tip="Download a mesh OBJ for reference or non-CAD workflows.">OBJ</button>
           <button id="export-stl" class="secondary" type="button" data-tip="Download a mesh STL for quick checks or slicer-style tools.">STL</button>
@@ -126,7 +126,7 @@
 
           <section class="panel">
             <h2>Output</h2>
-            <label data-tip="Controls mesh density for OBJ, STL, and browser STEP. Higher STEP quality can import much slower in SolidWorks.">Export quality
+            <label data-tip="Controls mesh density for OBJ/STL and source sampling for browser STEP. Higher quality improves detail and can slow SolidWorks imports.">Export quality
               <select data-path="export.resolution">
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
@@ -136,13 +136,13 @@
                 <option value="production">Production</option>
               </select>
             </label>
-            <label data-tip="Solid browser STEP imports as a faceted solid. Spline surface experiment is smoother but may import as surfaces.">STEP type
+            <label data-tip="Smooth surface STEP is the production-direction output with spline faces and fewer CAD entities. Faceted solid fallback is useful when you need SolidWorks to force a solid body.">STEP type
               <select data-path="export.stepMode">
-                <option value="facetedSolidStep">Solid browser STEP</option>
-                <option value="smoothSurfaceStep">Spline surface experiment</option>
+                <option value="smoothSurfaceStep">Smooth surface STEP</option>
+                <option value="facetedSolidStep">Faceted solid fallback</option>
               </select>
             </label>
-            <label data-tip="Only affects Spline surface experiment. Higher values fit each face with more spline control points; it has no effect on Solid browser STEP.">Spline controls <input data-path="export.surfaceControlLimit" type="number" min="10" max="64" step="1"></label>
+            <label data-tip="Controls Smooth surface STEP quality. Higher values fit each cabinet face with more spline control points; this can improve fidelity but may reduce import reliability.">Spline controls <input data-path="export.surfaceControlLimit" type="number" min="10" max="64" step="1"></label>
             <p id="export-status" class="status-text">Exports use the selected output quality, independent of preview resolution.</p>
           </section>
         </aside>

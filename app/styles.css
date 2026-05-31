@@ -55,43 +55,47 @@ button.secondary {
   color: #cdd5c4;
 }
 
-[data-tip] {
-  position: relative;
+.tip-target {
+  cursor: help;
+  text-decoration: underline;
+  text-decoration-color: rgba(214, 184, 77, 0.42);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
 }
 
-[data-tip]::after {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 7px);
-  z-index: 50;
-  width: max-content;
-  max-width: 280px;
+button .tip-target,
+.file-button .tip-target {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.floating-tooltip {
+  position: fixed;
+  z-index: 1000;
+  max-width: min(330px, calc(100vw - 24px));
   padding: 8px 10px;
-  border: 1px solid rgba(118, 132, 116, 0.72);
+  border: 1px solid rgba(118, 132, 116, 0.78);
   border-radius: 5px;
-  background: rgba(12, 14, 13, 0.96);
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.34);
+  background: rgba(12, 14, 13, 0.97);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
   color: #e9eee4;
-  content: attr(data-tip);
   font-size: 12px;
   font-weight: 500;
   line-height: 1.35;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(-3px);
-  transition: opacity 120ms ease, transform 120ms ease;
+  transform: translateY(-2px);
+  transition: opacity 90ms ease, transform 90ms ease;
   white-space: normal;
 }
 
-[data-tip]:hover::after,
-[data-tip]:focus-within::after {
+.floating-tooltip.visible {
   opacity: 1;
   transform: translateY(0);
 }
 
-.actions [data-tip]::after {
-  left: auto;
-  right: 0;
+.floating-tooltip[hidden] {
+  display: none;
 }
 
 .file-button input {

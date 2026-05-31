@@ -31,10 +31,10 @@ You can also open `app/index.html` directly in a browser.
 - Visual helpers for a floor origin marker, offset XYZ direction triad, outline box, floor grid, slim dimension guides, and min/max relief analysis planes.
 - Hover tooltips on controls, including STEP-specific notes for export quality and spline controls.
 - Orbit/pan/zoom 3D viewport using vendored Three.js files.
-- Browser downloads for `.wavecad.json`, `.obj`, `.stl`, solid browser `.step`, optional Docker STEP project `.wavecad.json`, and preview `.png`.
-- OBJ/STL/browser STEP exports use a separate output quality setting, so they can be higher resolution than the live preview.
+- Browser downloads for `.wavecad.json`, `.obj`, `.stl`, Smooth surface STEP, optional Docker STEP project `.wavecad.json`, and preview `.png`.
+- OBJ/STL/browser STEP exports use a separate output quality setting, so they can be higher resolution or smoother than the live preview.
 - Higher default preview/detail settings for inspecting wave relief without immediately changing controls.
-- Default STEP export uses a lighter solid setting for faster SolidWorks import; higher settings are available when checking final fidelity.
+- Default STEP export uses Smooth surface STEP. Faceted solid STEP remains available as a fallback when troubleshooting CAD imports.
 - Docker-based SolidWorks export through `Export-Solid-Step.bat`, which remains available as a separate experiment.
 
 ## Repository Layout
@@ -67,10 +67,10 @@ It checks that the default project loads, mesh vertices are finite, rounded fron
 
 ## STEP Direction
 
-The static app defaults to the browser solid STEP output because that path is currently the useful SolidWorks import target. Smooth reliable solid STEP remains the overall goal; the spline-surface STEP mode and Docker exporter are still available as experiments:
+The static app defaults to Smooth surface STEP because that is the production-direction browser output: fewer CAD entities than a triangle-per-face export, with a real BREP shell/solid structure for SolidWorks tests. Smooth reliable solid STEP remains the overall goal, and the Docker exporter remains a separate CAD-kernel experiment:
 
 ```text
 Export-Solid-Step.bat
 ```
 
-From the browser, use `Export STEP` for the default solid browser STEP. `Docker JSON` downloads a `.solid-step.wavecad.json` file for `Export-Solid-Step.bat`. The first solid target is an outer block only; hollow walls, cutouts, and separated panels are later steps.
+From the browser, use `Export STEP` for the default Smooth surface STEP. Switch `STEP type` to Faceted solid fallback only when you need a compatibility test. `Docker JSON` downloads a `.solid-step.wavecad.json` file for `Export-Solid-Step.bat`. The first solid target is an outer block only; hollow walls, cutouts, and separated panels are later steps.

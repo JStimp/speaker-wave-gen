@@ -91,7 +91,7 @@
     export: {
       formats: ["json", "obj", "stl", "step"],
       resolution: "high",
-      stepMode: "facetedSolidStep",
+      stepMode: "smoothSurfaceStep",
       surfaceControlLimit: 34
     }
   };

@@ -85,7 +85,7 @@
 
   function meshToSurfaceStep(mesh, project, name) {
     const title = safeStepString(name || "wavegen3d_surface");
-    const model = createStepModel(project, title, "WaveGen3D smooth spline STEP");
+    const model = createStepModel(project, title, "WaveGen3D smooth surface STEP");
     const add = model.add;
     const controlLimit = Math.max(10, Math.min(64, Number(project && project.export && project.export.surfaceControlLimit) || 34));
     const patches = surfacePatchesFromMesh(mesh, controlLimit);
@@ -120,12 +120,12 @@
     const body = add("MANIFOLD_SOLID_BREP('" + title + "'," + shell + ")");
     const representation = add("ADVANCED_BREP_SHAPE_REPRESENTATION('',(" + model.placement + "," + body + ")," + model.context + ")");
     add("SHAPE_DEFINITION_REPRESENTATION(" + model.definitionShape + "," + representation + ")");
-    return finishStep(model, "WaveGen3D smooth spline STEP");
+    return finishStep(model, "WaveGen3D smooth surface STEP");
   }
 
   function meshToFacetedStep(mesh, project, name) {
     const title = safeStepString(name || "wavegen3d_mesh");
-    const model = createStepModel(project, title, "WaveGen3D experimental faceted STEP");
+    const model = createStepModel(project, title, "WaveGen3D faceted solid fallback STEP");
     const add = model.add;
 
     const faceIds = [];
@@ -151,7 +151,7 @@
     const body = add("MANIFOLD_SOLID_BREP('" + title + "'," + shell + ")");
     const representation = add("ADVANCED_BREP_SHAPE_REPRESENTATION('',(" + model.placement + "," + body + ")," + model.context + ")");
     add("SHAPE_DEFINITION_REPRESENTATION(" + model.definitionShape + "," + representation + ")");
-    return finishStep(model, "WaveGen3D experimental faceted STEP");
+    return finishStep(model, "WaveGen3D faceted solid fallback STEP");
   }
 
   function exportStep(project, mesh) {
