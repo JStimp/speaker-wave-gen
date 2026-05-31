@@ -9,8 +9,8 @@ WaveGen3D is a static browser prototype. The first priority is a stable app that
 - Static browser UI in `app/`.
 - Vendored Three.js files in `app/vendor/`.
 - Browser-side geometry math in `app/geometry.js`.
-- Browser-side JSON/OBJ/STL/STEP exporters in `app/exporters.js`.
-- Future CAD-kernel STEP direction documented separately in `docs/step-exporter-plan.md`.
+- Browser-side JSON/OBJ/STL/experimental STEP exporters in `app/exporters.js`.
+- Docker-only CAD-kernel STEP solid exporter in `solid-step-exporter/`.
 
 ## Data Flow
 
@@ -19,7 +19,8 @@ User edits controls
   -> project object updates in memory
   -> geometry mesh rebuilds in the browser
   -> Three.js preview redraws
-  -> user downloads JSON, OBJ, STL, STEP, or PNG
+  -> user downloads JSON, OBJ, STL, browser STEP, or PNG
+  -> optional saved JSON goes through Docker solid STEP exporter
 ```
 
 ## Geometry Model
@@ -52,8 +53,8 @@ Analysis planes show the current min/max relief offsets around the cabinet, whil
 
 Sources are edited through compact selectable chips plus one focused editor. Clicking a source marker in the preview also selects that source, so source changes do not require scrolling through every driver.
 
-Preview mesh resolution and output mesh quality are separate. The preview can stay responsive while OBJ, STL, and STEP exports rebuild from a denser mesh.
+Preview mesh resolution and output mesh quality are separate. The preview can stay responsive while OBJ, STL, and browser STEP exports rebuild from a denser mesh.
 
 ## Stability Boundary
 
-The active prototype has no Node, npm, Vite, Rollup, Electron, Python, Docker, or CAD-kernel dependency. The built-in smooth STEP export uses spline surfaces in a BREP shell; higher-order analytic CAD solids remain a future CAD-kernel track.
+The active browser prototype has no Node, npm, Vite, Rollup, Electron, Python, Docker, or CAD-kernel dependency. SolidWorks solid STEP export is a separate Docker path that reads saved `.wavecad.json` files and writes `outer-solid.step`.

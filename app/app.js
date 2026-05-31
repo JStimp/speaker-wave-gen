@@ -155,6 +155,7 @@
     document.getElementById("export-obj").addEventListener("click", () => exportMesh("obj"));
     document.getElementById("export-stl").addEventListener("click", () => exportMesh("stl"));
     document.getElementById("export-step").addEventListener("click", () => exportMesh("step"));
+    document.getElementById("prepare-solid-step").addEventListener("click", prepareSolidStepProject);
     document.getElementById("save-png").addEventListener("click", saveScreenshot);
     document.getElementById("load-project").addEventListener("change", loadProjectFile);
   }
@@ -403,7 +404,7 @@
     if (format === "obj") Exporters.exportObj(project, outputMesh);
     if (format === "stl") Exporters.exportStl(project, outputMesh);
     if (format === "step") Exporters.exportStep(project, outputMesh);
-    const stepKind = format === "step" && project.export.stepMode === "smoothSurfaceStep" ? " smooth spline" : "";
+    const stepKind = format === "step" && project.export.stepMode === "smoothSurfaceStep" ? " experimental spline" : "";
     setExportStatus(
       format.toUpperCase() + stepKind + " export built at " + resolution + " quality (" +
       outputMesh.summary.vertexCount.toLocaleString() + " verts / " +
@@ -414,6 +415,11 @@
   function setExportStatus(message) {
     const status = document.getElementById("export-status");
     if (status) status.textContent = message;
+  }
+
+  function prepareSolidStepProject() {
+    Exporters.exportSolidStepProjectJson(project);
+    setExportStatus("Saved Solid STEP project JSON. Drag it onto Export-Solid-Step.bat to build outer-solid.step with Docker.");
   }
 
   function createOutlineBox(dims) {
