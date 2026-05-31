@@ -16,8 +16,9 @@
 - Added focused source editing with selectable source chips and click-to-select preview markers.
 - Improved wave height visualization with computed preview normals and contrast color modes.
 - Added independent export quality so outputs can be denser than preview.
+- Raised preview/detail presets and updated the starter cabinet/source settings for a stronger default wave pattern.
 - Added corner wrap geometry for smoother wave continuity around softened cabinet edges.
-- Added JSON, OBJ, STL, experimental spline STEP, faceted STEP fallback, and PNG browser exports.
+- Added JSON, OBJ, STL, solid browser STEP, experimental spline STEP, and PNG browser exports.
 - Added a Docker-only CadQuery/OCP solid STEP exporter with a drag/drop Windows launcher for SolidWorks outer-block solids.
 - Added a Solid STEP Project browser export that saves the `.wavecad.json` intended for the Docker solid exporter.
 - Added browser smoke test page and dependency-free solid-exporter geometry tests.

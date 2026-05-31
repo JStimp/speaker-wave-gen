@@ -33,12 +33,15 @@
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x10120f);
 
-    camera = new THREE.PerspectiveCamera(38, 1, 1, 6000);
+    camera = new THREE.PerspectiveCamera(34, 1, 1, 6000);
     camera.up.set(0, 0, 1);
-    camera.position.set(28, 34, 24);
+    camera.position.set(26, 36, 25);
 
     renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.5));
+    if (THREE.SRGBColorSpace) renderer.outputColorSpace = THREE.SRGBColorSpace;
+    if (THREE.ACESFilmicToneMapping) renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.04;
     viewer.appendChild(renderer.domElement);
     renderer.domElement.addEventListener("pointerdown", handlePointerDown);
 
@@ -53,6 +56,9 @@
     const fill = new THREE.DirectionalLight(0xb7d6b2, 0.75);
     fill.position.set(-700, -300, 500);
     scene.add(fill);
+    const rim = new THREE.DirectionalLight(0x8fb5ff, 0.42);
+    rim.position.set(-450, 650, 250);
+    scene.add(rim);
 
     grid = new THREE.GridHelper(1100, 22, 0x3b3d34, 0x252820);
     grid.rotation.x = Math.PI / 2;
@@ -404,7 +410,9 @@
     if (format === "obj") Exporters.exportObj(project, outputMesh);
     if (format === "stl") Exporters.exportStl(project, outputMesh);
     if (format === "step") Exporters.exportStep(project, outputMesh);
-    const stepKind = format === "step" && project.export.stepMode === "smoothSurfaceStep" ? " experimental spline" : "";
+    const stepKind = format === "step"
+      ? (project.export.stepMode === "facetedSolidStep" ? " solid browser" : " spline surface")
+      : "";
     setExportStatus(
       format.toUpperCase() + stepKind + " export built at " + resolution + " quality (" +
       outputMesh.summary.vertexCount.toLocaleString() + " verts / " +
@@ -419,7 +427,7 @@
 
   function prepareSolidStepProject() {
     Exporters.exportSolidStepProjectJson(project);
-    setExportStatus("Saved Solid STEP project JSON. Drag it onto Export-Solid-Step.bat to build outer-solid.step with Docker.");
+    setExportStatus("Saved Docker exporter JSON.");
   }
 
   function createOutlineBox(dims) {
@@ -701,8 +709,8 @@
 
     const material = new THREE.MeshStandardMaterial({
       vertexColors: true,
-      roughness: 0.64,
-      metalness: 0.02,
+      roughness: 0.58,
+      metalness: 0,
       side: THREE.DoubleSide
     });
 
@@ -715,7 +723,7 @@
     geometry.setIndex(nextMesh.indices);
     const wireGeometry = new THREE.WireframeGeometry(geometry);
     geometry.dispose();
-    const material = new THREE.LineBasicMaterial({ color: 0xd6e6ef, transparent: true, opacity: 0.12 });
+    const material = new THREE.LineBasicMaterial({ color: 0xd6e6ef, transparent: true, opacity: 0.08 });
     return new THREE.LineSegments(wireGeometry, material);
   }
 
@@ -726,7 +734,7 @@
     });
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    const material = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+    const material = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.46 });
     return new THREE.LineSegments(geometry, material);
   }
 

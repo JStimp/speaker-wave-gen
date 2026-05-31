@@ -8,52 +8,53 @@ from pathlib import Path
 FACE_NAMES = ["front", "back", "left", "right", "top", "bottom"]
 RESOLUTION_PRESETS = {
     "draft": 10,
-    "low": 16,
-    "medium": 24,
-    "high": 36,
-    "ultra": 56,
-    "fine": 80,
-    "production": 112,
+    "low": 20,
+    "medium": 36,
+    "high": 64,
+    "ultra": 96,
+    "inspection": 128,
+    "fine": 160,
+    "production": 192,
 }
 
 DEFAULT_PROJECT = {
     "schemaVersion": 1,
     "units": "in",
-    "project": {"name": "Default two-driver wave speaker", "notes": "Static browser prototype."},
+    "project": {"name": "Wave wrapped hardwood speaker", "notes": "Static browser prototype."},
     "cabinet": {
         "preset": "rectangular",
-        "cornerWrap": 0.18,
-        "dimensions": {"width": 20.5, "height": 30, "depth": 13.5, "wallThickness": 0.75},
+        "cornerWrap": 0.28,
+        "dimensions": {"width": 18, "height": 32, "depth": 14, "wallThickness": 0.875},
     },
     "drivers": [
         {
             "id": "woofer",
             "label": "Woofer",
             "face": "front",
-            "center": {"x": 0, "z": 10.25},
+            "center": {"x": 0, "z": 11.25},
             "diameter": 8.5,
-            "source": {"enabled": True, "amplitude": 0.14, "wavelength": 4.65, "phase": 0, "falloff": 0.046},
+            "source": {"enabled": True, "amplitude": 0.19, "wavelength": 4.9, "phase": 0.12, "falloff": 0.031},
         },
         {
             "id": "tweeter",
             "label": "Tweeter",
             "face": "front",
-            "center": {"x": 0, "z": 22},
+            "center": {"x": 0, "z": 24},
             "diameter": 3.6,
-            "source": {"enabled": True, "amplitude": 0.07, "wavelength": 2.85, "phase": 0.75, "falloff": 0.056},
+            "source": {"enabled": True, "amplitude": 0.105, "wavelength": 2.85, "phase": 0.68, "falloff": 0.043},
         },
     ],
     "manualSources": [],
     "waves": {
-        "baseAmplitude": 1,
+        "baseAmplitude": 1.08,
         "normalization": "softClip",
-        "reliefDepth": 0.22,
+        "reliefDepth": 0.34,
         "reliefBias": 0,
         "flatBottom": True,
-        "minThickness": 0.47,
+        "minThickness": 0.5,
     },
-    "preview": {"resolution": "high"},
-    "export": {"resolution": "production", "solidResolution": "fine", "solidSurfaceControlLimit": 34},
+    "preview": {"resolution": "ultra"},
+    "export": {"resolution": "inspection", "solidResolution": "fine", "solidSurfaceControlLimit": 34, "stepMode": "facetedSolidStep"},
 }
 
 

@@ -18,12 +18,12 @@
             Load JSON
             <input id="load-project" type="file" accept=".json,.wavecad.json">
           </label>
-          <button id="save-json" type="button">Save JSON</button>
-          <button id="export-obj" type="button">OBJ</button>
-          <button id="export-stl" type="button">STL</button>
-          <button id="export-step" type="button">Browser STEP</button>
-          <button id="prepare-solid-step" type="button">Solid STEP Project</button>
-          <button id="save-png" type="button">PNG</button>
+          <button id="export-step" class="primary" type="button">Export STEP</button>
+          <button id="save-json" type="button">Save Project</button>
+          <button id="export-obj" class="secondary" type="button">OBJ</button>
+          <button id="export-stl" class="secondary" type="button">STL</button>
+          <button id="save-png" class="secondary" type="button">PNG</button>
+          <button id="prepare-solid-step" class="secondary" type="button">Docker JSON</button>
         </div>
       </header>
 
@@ -78,13 +78,14 @@
                 <option value="none">None</option>
               </select>
             </label>
-            <label>Resolution
+            <label>Preview detail
               <select data-path="preview.resolution">
                 <option value="draft">Draft</option>
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
                 <option value="ultra">Ultra</option>
+                <option value="inspection">Inspection</option>
               </select>
             </label>
           </section>
@@ -103,7 +104,7 @@
 
           <section class="panel">
             <h2>View Tools</h2>
-            <label>Wave color
+            <label>Surface color
               <select data-path="preview.colorMode">
                 <option value="relief">Relief contrast</option>
                 <option value="wood">Wood relief</option>
@@ -130,23 +131,19 @@
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
                 <option value="ultra">Ultra</option>
+                <option value="inspection">Inspection</option>
                 <option value="fine">Fine</option>
                 <option value="production">Production</option>
               </select>
             </label>
-            <label>Browser STEP
+            <label>STEP type
               <select data-path="export.stepMode">
-                <option value="smoothSurfaceStep">Experimental spline surfaces</option>
-                <option value="facetedSolidStep">Faceted fallback</option>
+                <option value="facetedSolidStep">Solid browser STEP</option>
+                <option value="smoothSurfaceStep">Spline surface experiment</option>
               </select>
             </label>
-            <label>Surface controls <input data-path="export.surfaceControlLimit" type="number" min="10" max="64" step="1"></label>
+            <label>Spline controls <input data-path="export.surfaceControlLimit" type="number" min="10" max="64" step="1"></label>
             <p id="export-status" class="status-text">Exports use the selected output quality, independent of preview resolution.</p>
-          </section>
-
-          <section class="panel note">
-            <h2>STEP</h2>
-            <p>Browser STEP is experimental and may import as surfaces. Solid STEP Project saves the file to drag onto Export-Solid-Step.bat.</p>
           </section>
         </aside>
       </section>

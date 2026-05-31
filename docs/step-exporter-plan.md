@@ -1,6 +1,6 @@
 # STEP Solid Exporter
 
-The static prototype includes an experimental browser STEP export plus a faceted fallback. SolidWorks can import that path as surface bodies, so this Docker exporter uses a real OpenCascade-backed CAD kernel to sew surfaces, create one solid, validate it, and write a STEP intended to import as a SolidWorks solid body.
+The static prototype now defaults to the browser solid STEP path because that is the current useful SolidWorks output. This Docker exporter remains a separate experiment for a later analytic/CAD-kernel solid path.
 
 ## Goal
 
@@ -32,11 +32,11 @@ WaveGen3D .wavecad.json
 
 - Outer solid block only.
 - Hollow wall thickness, driver cutouts, and separated panel STEP exports are later stages.
-- The browser STEP button remains experimental and should not be used as the primary SolidWorks solid-body path.
+- The browser solid STEP button is the current primary prototype output. The Docker path is optional while the CAD-kernel approach is proven out.
 
 ## Windows Launcher
 
-Click `Solid STEP Project` in the browser to download a `.solid-step.wavecad.json`, then drag it onto `Export-Solid-Step.bat`. The batch file also supports ordinary `.wavecad.json` files and opens a file picker when no file is dropped onto it.
+Click `Docker JSON` in the browser to download a `.solid-step.wavecad.json`, then drag it onto `Export-Solid-Step.bat`. The batch file also supports ordinary `.wavecad.json` files and opens a file picker when no file is dropped onto it.
 
 ## Acceptance Target
 
@@ -49,13 +49,13 @@ Click `Solid STEP Project` in the browser to download a `.solid-step.wavecad.jso
 
 ## Non-Goals For Prototype
 
-- No claim that browser-generated faceted STEP is final manufacturing CAD.
+- No claim that browser-generated faceted STEP is the final smooth/editable manufacturing CAD.
 - No Docker requirement to open or preview the app.
 
 ## Current Browser STEP
 
 - Runs fully in `app/exporters.js`.
 - Rebuilds from the selected export quality.
-- Default mode writes a BREP shell from spline surface faces.
-- Fallback mode writes a faceted BREP STEP from triangular faces.
-- Intended for CAD import experiments before the analytic exporter exists.
+- Default mode writes a faceted BREP STEP from triangular faces because it is currently importing as a solid body.
+- Optional spline mode writes a BREP shell from spline surface faces for continued experiments.
+- Intended as the active prototype STEP output until the analytic exporter proves it can produce a better smooth solid.

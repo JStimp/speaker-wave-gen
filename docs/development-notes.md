@@ -23,8 +23,9 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added focused source editing with selectable source chips and preview source marker selection.
 - Improved wave relief visualization with computed normals and higher-contrast color modes.
 - Added independent export quality so OBJ/STL/STEP can be generated at higher resolution than preview.
+- Raised default preview/detail presets and tuned the starter cabinet, driver positions, source amplitudes, wavelengths, corner wrap, and relief depth for a better-looking first render.
 - Added corner wrap geometry for smoother wrapped edges while preserving a flat underside contact patch.
-- Added browser JSON, OBJ, STL, experimental spline STEP, faceted STEP fallback, and PNG exports.
+- Added browser JSON, OBJ, STL, solid browser STEP, experimental spline STEP, and PNG exports.
 - Added a Docker-only CadQuery/OCP solid STEP exporter for the first outer-block SolidWorks import path.
 - Added an example `default-speaker.wavecad.json` project.
 - Added a browser smoke test page.
@@ -47,7 +48,7 @@ This file tracks the practical work being done in the repo so the project has a 
 - Rectangular cabinet only.
 - Browser file dialogs use upload/download controls.
 - OBJ/STL are mesh exports, not editable CAD surfaces.
-- Browser STEP is an experimental spline-surface BREP or faceted fallback. Use the Docker solid exporter for the SolidWorks solid-body path.
+- Browser STEP defaults to the solid faceted BREP path because that is currently the useful SolidWorks import target. The spline-surface browser mode and Docker exporter remain experimental paths.
 - The Docker exporter currently targets one outer solid block; hollow shells, cutouts, and separated CAD panels remain future work.
 
 ## Verification Run By Codex

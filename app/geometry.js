@@ -4,29 +4,30 @@
   const FACE_NAMES = ["front", "back", "left", "right", "top", "bottom"];
   const RESOLUTION_PRESETS = {
     draft: 10,
-    low: 16,
-    medium: 24,
-    high: 36,
-    ultra: 56,
-    fine: 80,
-    production: 112
+    low: 20,
+    medium: 36,
+    high: 64,
+    ultra: 96,
+    inspection: 128,
+    fine: 160,
+    production: 192
   };
 
   const DEFAULT_PROJECT = {
     schemaVersion: 1,
     units: "in",
     project: {
-      name: "Default two-driver wave speaker",
+      name: "Wave wrapped hardwood speaker",
       notes: "Static browser prototype."
     },
     cabinet: {
       preset: "rectangular",
-      cornerWrap: 0.18,
+      cornerWrap: 0.28,
       dimensions: {
-        width: 20.5,
-        height: 30,
-        depth: 13.5,
-        wallThickness: 0.75
+        width: 18,
+        height: 32,
+        depth: 14,
+        wallThickness: 0.875
       }
     },
     drivers: [
@@ -34,53 +35,53 @@
         id: "woofer",
         label: "Woofer",
         face: "front",
-        center: { x: 0, z: 10.25 },
+        center: { x: 0, z: 11.25 },
         diameter: 8.5,
         source: {
           enabled: true,
-          amplitude: 0.14,
-          wavelength: 4.65,
-          phase: 0,
-          falloff: 0.046
+          amplitude: 0.19,
+          wavelength: 4.9,
+          phase: 0.12,
+          falloff: 0.031
         }
       },
       {
         id: "tweeter",
         label: "Tweeter",
         face: "front",
-        center: { x: 0, z: 22 },
+        center: { x: 0, z: 24 },
         diameter: 3.6,
         source: {
           enabled: true,
-          amplitude: 0.07,
+          amplitude: 0.105,
           wavelength: 2.85,
-          phase: 0.75,
-          falloff: 0.056
+          phase: 0.68,
+          falloff: 0.043
         }
       }
     ],
     manualSources: [],
     waves: {
-      baseAmplitude: 1,
+      baseAmplitude: 1.08,
       normalization: "softClip",
-      reliefDepth: 0.22,
+      reliefDepth: 0.34,
       reliefBias: 0,
       flatBottom: true,
-      minThickness: 0.47
+      minThickness: 0.5
     },
     preview: {
-      resolution: "high",
+      resolution: "ultra",
       showSeams: true,
       showDrivers: true,
       showSources: true,
-      showPanels: true,
+      showPanels: false,
       showOutline: true,
       showAxes: true,
       showDimensions: true,
-      showAnalysis: true,
+      showAnalysis: false,
       showGrid: true,
       colorMode: "relief",
-      heightContrast: 1.75
+      heightContrast: 2.35
     },
     panelization: {
       mode: "separated",
@@ -89,8 +90,8 @@
     },
     export: {
       formats: ["json", "obj", "stl", "step"],
-      resolution: "production",
-      stepMode: "smoothSurfaceStep",
+      resolution: "inspection",
+      stepMode: "facetedSolidStep",
       surfaceControlLimit: 34
     }
   };
