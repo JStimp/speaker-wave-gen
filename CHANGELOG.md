@@ -17,9 +17,9 @@
 - Improved wave height visualization with computed preview normals and contrast color modes.
 - Added independent export quality so outputs can be denser than preview.
 - Added corner wrap geometry for smoother wave continuity around softened cabinet edges.
-- Added JSON, OBJ, STL, smooth spline STEP, faceted STEP fallback, and PNG browser exports.
-- Added browser smoke test page.
-- Documented STEP as a separate future Docker exporter.
+- Added JSON, OBJ, STL, experimental spline STEP, faceted STEP fallback, and PNG browser exports.
+- Added a Docker-only CadQuery/OCP solid STEP exporter with a drag/drop Windows launcher for SolidWorks outer-block solids.
+- Added browser smoke test page and dependency-free solid-exporter geometry tests.
 - Reduced CI to static checks only.
 
 ### Retired Prototype Tracks

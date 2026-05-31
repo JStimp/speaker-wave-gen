@@ -1,32 +1,50 @@
-# STEP Exporter Plan
+# STEP Solid Exporter
 
-The static prototype now includes an in-house spline-surface STEP export plus a faceted fallback. That is useful for SolidWorks import testing, but it is still generated from sampled browser geometry. This document tracks the later analytic CAD-kernel exporter.
+The static prototype includes an experimental browser STEP export plus a faceted fallback. SolidWorks can import that path as surface bodies, so this Docker exporter uses a real OpenCascade-backed CAD kernel to sew surfaces, create one solid, validate it, and write a STEP intended to import as a SolidWorks solid body.
 
 ## Goal
 
 ```text
 WaveGen3D .wavecad.json
   -> CAD-kernel STEP exporter
-  -> clean full cabinet STEP
-  -> separated panel STEP files with matched edges
+  -> exports/outer-solid.step
+  -> exports/outer-solid.report.json
 ```
 
-## Proposed Runtime
+## Runtime
 
-- Preferred: dependency-isolated Linux Docker image.
-- Candidate kernels: OpenCascade/OCP, FreeCAD CLI, or another real CAD kernel.
+- Dependency-isolated Linux Docker image in `solid-step-exporter/`.
+- CadQuery/OCP/OpenCascade provides spline faces, sewing, solid creation, validation, STEP write, and STEP re-import checking.
 - The static browser app should stay able to launch without this runtime.
 
 ## Inputs
 
 - `.wavecad.json` project exported from the static app.
-- Optional export settings such as mesh resolution, panel inclusion, and surface fitting tolerance.
+- Optional exporter flags for resolution, surface control count, sewing tolerance, and debug surface output.
 
 ## Outputs
 
-- Full cabinet STEP surface/body.
-- Separated panel STEP files with matched relief edges.
-- Optional OBJ/STL preview files for comparison.
+- `outer-solid.step`: first target is one outer block solid.
+- `outer-solid.report.json`: success flag, free-edge count, validation result, re-import solid count, and geometry stats.
+- `outer-surfaces-debug.step`: optional or failure-path sewn surface debug file.
+
+## Current Limits
+
+- Outer solid block only.
+- Hollow wall thickness, driver cutouts, and separated panel STEP exports are later stages.
+- The browser STEP button remains experimental and should not be used as the primary SolidWorks solid-body path.
+
+## Windows Launcher
+
+Use `Export-Solid-Step.bat`. It supports drag/drop of a `.wavecad.json`, otherwise it opens a file picker, builds the Docker image, and writes output to `exports/`.
+
+## Acceptance Target
+
+- `outer-solid.report.json` has `success: true`.
+- `freeEdges` is `0`.
+- `validSolid` is `true`.
+- `importedSolidCount` is `1`.
+- SolidWorks imports `outer-solid.step` as one Solid Bodies item, not separate Surface Bodies.
 - Export report with warnings and geometry stats.
 
 ## Non-Goals For Prototype

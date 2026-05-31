@@ -174,7 +174,6 @@
     const radius = maxRadius * wrap;
     if (radius <= 0.000001) return point;
 
-    const flatBottom = Boolean(project && project.waves && project.waves.flatBottom);
     const p = point.position;
     const hx = dims.width / 2;
     const hy = dims.depth / 2;

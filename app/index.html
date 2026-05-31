@@ -133,10 +133,10 @@
                 <option value="production">Production</option>
               </select>
             </label>
-            <label>STEP body
+            <label>Browser STEP
               <select data-path="export.stepMode">
-                <option value="smoothSurfaceStep">Smooth surface solid</option>
-                <option value="facetedSolidStep">Faceted solid fallback</option>
+                <option value="smoothSurfaceStep">Experimental spline surfaces</option>
+                <option value="facetedSolidStep">Faceted fallback</option>
               </select>
             </label>
             <label>Surface controls <input data-path="export.surfaceControlLimit" type="number" min="10" max="64" step="1"></label>
@@ -145,7 +145,7 @@
 
           <section class="panel note">
             <h2>STEP</h2>
-            <p>Smooth STEP exports spline surfaces for a cleaner SolidWorks import. Faceted fallback is still available for troubleshooting.</p>
+            <p>Browser STEP is experimental and may import as surfaces. Use Export-Solid-Step.bat for the Docker CAD-kernel solid STEP path.</p>
           </section>
         </aside>
       </section>

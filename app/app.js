@@ -403,7 +403,7 @@
     if (format === "obj") Exporters.exportObj(project, outputMesh);
     if (format === "stl") Exporters.exportStl(project, outputMesh);
     if (format === "step") Exporters.exportStep(project, outputMesh);
-    const stepKind = format === "step" && project.export.stepMode === "smoothSurfaceStep" ? " smooth spline" : "";
+    const stepKind = format === "step" && project.export.stepMode === "smoothSurfaceStep" ? " experimental spline" : "";
     setExportStatus(
       format.toUpperCase() + stepKind + " export built at " + resolution + " quality (" +
       outputMesh.summary.vertexCount.toLocaleString() + " verts / " +
