@@ -14,7 +14,7 @@
 - Refined CAD preview labels with a separate floor origin marker, offset XYZ direction triad, slim dimension text, and viewport-clamped hover-only tooltips for control text.
 - Changed coordinates to X width, Y depth, Z height with the origin at floor center and bottom on `Z=0`.
 - Added inch/mm unit selection with inches as the default.
-- Added focused source editing with selectable source chips and click-to-select preview markers.
+- Added focused source editing with selectable source chips, click-to-select preview markers, duplicate/copy/paste source actions, and a floating overlay editor.
 - Improved wave height visualization with computed preview normals and contrast color modes.
 - Added independent export quality so outputs can be denser than preview.
 - Raised preview/detail presets and updated the starter cabinet/source settings for a stronger default wave pattern.

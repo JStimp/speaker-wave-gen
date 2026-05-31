@@ -380,13 +380,68 @@ button:focus,
 }
 
 .source-editor-header strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 14px;
 }
 
-.source-editor .remove {
+.source-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin: 0 0 10px;
+}
+
+.source-actions button,
+.source-close {
   min-height: 28px;
   padding: 4px 8px;
+  font-size: 12px;
+}
+
+.source-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.source-editor .remove {
   color: #ffd2cc;
+}
+
+.source-close {
+  color: #cbd5bf;
+}
+
+.source-overlay {
+  position: fixed;
+  left: 18px;
+  top: 78px;
+  z-index: 60;
+  width: min(360px, calc(100vw - 442px));
+  pointer-events: none;
+}
+
+.source-overlay[hidden] {
+  display: none;
+}
+
+.source-overlay-window {
+  border: 1px solid var(--source-color, #d6b84d);
+  border-radius: 7px;
+  background: rgba(17, 19, 15, 0.94);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
+  pointer-events: auto;
+  backdrop-filter: blur(10px);
+}
+
+.source-overlay-body {
+  --source-color: inherit;
+  padding: 10px;
+}
+
+.source-overlay .source-editor-header {
+  margin-bottom: 9px;
 }
 
 .source-empty,

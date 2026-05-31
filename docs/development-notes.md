@@ -23,7 +23,7 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added hover-only tooltips throughout the UI, with viewport-clamped placement and STEP-specific notes for smooth surface quality controls.
 - Changed the coordinate system to X width, Y depth, Z height with the origin at the floor center.
 - Added inches as the default unit plus inch/mm conversion in the project controls.
-- Added focused source editing with selectable source chips and preview source marker selection.
+- Added focused source editing with selectable source chips, preview source marker selection, duplicate/copy/paste source actions, and a floating overlay editor that works alongside the sidebar editor.
 - Improved wave relief visualization with computed normals and higher-contrast color modes.
 - Added independent export quality so OBJ/STL/STEP can be generated at higher resolution than preview.
 - Raised default preview/detail presets and tuned the starter cabinet, driver positions, source amplitudes, wavelengths, corner wrap, and relief depth for a better-looking first render.

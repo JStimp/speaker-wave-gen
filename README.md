@@ -25,7 +25,7 @@ You can also open `app/index.html` directly in a browser.
 - Continuous wave relief across the active waved faces, with an optional flat bottom that keeps the contact surface on `Z=0` while the lower perimeter rounds inward and upward.
 - Corner wrap control for smoother wave continuity around softened cabinet edges.
 - Unit selection for inches or millimeters.
-- Driver/source add/remove controls with selectable source chips and a focused source editor.
+- Driver/source add/remove controls with selectable source chips, duplicate/copy/paste settings, a sidebar editor, and a floating click-to-edit overlay.
 - Advanced source controls for position, diameter, amplitude, wavelength, phase, and falloff.
 - Relief depth, flat-bottom, bias, normalization, preview resolution, export quality, and overlay controls.
 - Visual helpers for a floor origin marker, offset XYZ direction triad, outline box, floor grid, slim dimension guides, and min/max relief analysis planes.

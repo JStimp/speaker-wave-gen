@@ -16,6 +16,8 @@
   let raycaster = null;
   let pointer = null;
   let selectedSourceKey = "driver:0";
+  let overlaySourceKey = "";
+  let copiedSourceSettings = null;
   let activeDimension = null;
   let rebuildTimer = 0;
   let viewInitialized = false;
@@ -27,6 +29,7 @@
   function init() {
     initThree();
     initTooltipSystem();
+    initSourceOverlay();
     bindControls();
     syncForm();
     rebuild();
@@ -137,6 +140,7 @@
         }
       });
       selectedSourceKey = "driver:" + index;
+      overlaySourceKey = selectedSourceKey;
       renderSources();
       scheduleRebuild();
     });
@@ -156,6 +160,7 @@
         falloff: falloffValue(0.038)
       });
       selectedSourceKey = "manual:" + index;
+      overlaySourceKey = selectedSourceKey;
       renderSources();
       scheduleRebuild();
     });
@@ -182,6 +187,15 @@
     window.addEventListener("resize", hideTooltip);
     window.addEventListener("blur", hideTooltip);
     prepareTooltips(document);
+  }
+
+  function initSourceOverlay() {
+    const overlay = document.createElement("div");
+    overlay.id = "source-overlay";
+    overlay.className = "source-overlay";
+    overlay.hidden = true;
+    overlay.innerHTML = '<div class="source-overlay-window"><div id="source-overlay-body" class="source-overlay-body"></div></div>';
+    document.body.appendChild(overlay);
   }
 
   function prepareTooltips(root) {
@@ -308,6 +322,7 @@
     if (!entries.length) {
       list.innerHTML = '<p class="source-empty">Add a driver or point source to start shaping the relief.</p>';
       editor.innerHTML = "";
+      closeSourceOverlay();
       return;
     }
 
@@ -323,34 +338,16 @@
 
     list.querySelectorAll("[data-source-key]").forEach((button) => {
       button.addEventListener("click", () => {
-        selectedSourceKey = button.dataset.sourceKey;
-        renderSources();
-        if (mesh) drawMesh(mesh);
+        selectSource(button.dataset.sourceKey, true);
       });
     });
 
     const selected = entries.find((entry) => entry.key === selectedSourceKey) || entries[0];
     editor.style.setProperty("--source-color", colorCss(selected.color));
-    editor.innerHTML = sourceEditorTemplate(selected);
+    editor.innerHTML = sourceEditorTemplate(selected, { overlay: false });
     prepareTooltips(editor);
-
-    editor.querySelectorAll("[data-source-field]").forEach((input) => {
-      input.addEventListener("input", () => updateSourceFromInput(input));
-      input.addEventListener("change", () => {
-        updateSourceFromInput(input);
-        renderSources();
-      });
-    });
-
-    editor.querySelectorAll("[data-remove-source]").forEach((button) => {
-      button.addEventListener("click", () => {
-        if (button.dataset.sourceType === "driver") project.drivers.splice(Number(button.dataset.index), 1);
-        else project.manualSources.splice(Number(button.dataset.index), 1);
-        selectedSourceKey = "";
-        renderSources();
-        scheduleRebuild();
-      });
-    });
+    bindSourceEditor(editor);
+    renderSourceOverlay();
   }
 
   function sourceEntries() {
@@ -413,13 +410,53 @@
     ].join("");
   }
 
-  function sourceEditorTemplate(entry) {
+  function selectSource(key, showOverlay) {
+    selectedSourceKey = key;
+    if (showOverlay) overlaySourceKey = key;
+    renderSources();
+    if (mesh) drawMesh(mesh);
+  }
+
+  function renderSourceOverlay() {
+    const overlay = document.getElementById("source-overlay");
+    const body = document.getElementById("source-overlay-body");
+    if (!overlay || !body || !overlaySourceKey) return;
+
+    const entries = sourceEntries();
+    const entry = entries.find((candidate) => candidate.key === overlaySourceKey);
+    if (!entry) {
+      closeSourceOverlay();
+      return;
+    }
+
+    overlay.style.setProperty("--source-color", colorCss(entry.color));
+    body.innerHTML = sourceEditorTemplate(entry, { overlay: true });
+    prepareTooltips(body);
+    bindSourceEditor(body);
+    overlay.hidden = false;
+  }
+
+  function closeSourceOverlay() {
+    overlaySourceKey = "";
+    const overlay = document.getElementById("source-overlay");
+    if (overlay) overlay.hidden = true;
+  }
+
+  function sourceEditorTemplate(entry, options) {
+    const isOverlay = Boolean(options && options.overlay);
     const item = entry.item;
     const source = entry.source;
     const center = entry.center;
-    const remove = '<button class="remove" type="button" data-remove-source data-source-type="' + entry.type + '" data-index="' + entry.index + '">Remove</button>';
+    const close = isOverlay ? '<button class="source-close" type="button" data-close-source-overlay aria-label="Close source editor">Close</button>' : "";
+    const pasteDisabled = copiedSourceSettings ? "" : " disabled";
     return [
-      '<div class="source-editor-header"><span class="source-swatch"></span><strong>' + escapeHtml(entry.label) + '</strong>' + remove + '</div>',
+      '<div class="source-editor-header"><span class="source-swatch"></span><strong>' + escapeHtml(entry.label) + '</strong>' + close + '</div>',
+      '<div class="source-actions">',
+      '<button type="button" data-source-action="duplicate" data-source-type="' + entry.type + '" data-index="' + entry.index + '" data-tip="Create a new source with the same placement and wave settings, offset slightly so it is easy to grab.">Duplicate</button>',
+      '<button type="button" data-source-action="copy" data-source-type="' + entry.type + '" data-index="' + entry.index + '" data-tip="Copy this source wave settings for pasting onto another source. Position and name are not pasted.">Copy Settings</button>',
+      '<button type="button" data-source-action="paste" data-source-type="' + entry.type + '" data-index="' + entry.index + '"' + pasteDisabled + ' data-tip="Paste copied wave settings onto this source without moving it.">Paste Settings</button>',
+      '<button class="remove" type="button" data-source-action="remove" data-source-type="' + entry.type + '" data-index="' + entry.index + '" data-tip="Remove this source from the project.">Remove</button>',
+      "</div>",
       '<label class="check" data-tip="Turns this wave source on or off without deleting it."><input data-source-field="enabled" data-source-type="' + entry.type + '" data-index="' + entry.index + '" type="checkbox" ' + (source.enabled !== false ? "checked" : "") + '> Enabled</label>',
       '<div class="grid-2">',
       textField("Name", "label", entry.label, entry.type, entry.index, "Display name for this source marker and editor tab."),
@@ -432,6 +469,37 @@
       field("Falloff", "falloff", source.falloff, entry.type, entry.index, 0.0001, "How quickly this source fades with surface distance. Lower values carry farther."),
       "</div>"
     ].join("");
+  }
+
+  function bindSourceEditor(root) {
+    root.querySelectorAll("[data-source-field]").forEach((input) => {
+      input.addEventListener("input", () => {
+        updateSourceFromInput(input);
+        syncMirroredSourceInputs(input);
+      });
+      input.addEventListener("change", () => {
+        updateSourceFromInput(input);
+        renderSources();
+      });
+    });
+
+    root.querySelectorAll("[data-source-action]").forEach((button) => {
+      button.addEventListener("click", () => handleSourceAction(button));
+    });
+
+    root.querySelectorAll("[data-close-source-overlay]").forEach((button) => {
+      button.addEventListener("click", closeSourceOverlay);
+    });
+  }
+
+  function handleSourceAction(button) {
+    const type = button.dataset.sourceType;
+    const index = Number(button.dataset.index);
+    const action = button.dataset.sourceAction;
+    if (action === "duplicate") duplicateSource(type, index);
+    if (action === "copy") copySourceSettings(type, index);
+    if (action === "paste") pasteSourceSettings(type, index);
+    if (action === "remove") removeSource(type, index);
   }
 
   function field(label, fieldName, value, type, index, step, tip) {
@@ -457,6 +525,128 @@
     else source[fieldName] = value;
 
     scheduleRebuild();
+  }
+
+  function syncMirroredSourceInputs(changedInput) {
+    const type = changedInput.dataset.sourceType;
+    const index = changedInput.dataset.index;
+    const fieldName = changedInput.dataset.sourceField;
+    const value = sourceFieldValue(type, Number(index), fieldName);
+    document.querySelectorAll("[data-source-field]").forEach((input) => {
+      if (input === changedInput) return;
+      if (input.dataset.sourceType !== type || input.dataset.index !== index || input.dataset.sourceField !== fieldName) return;
+      if (input.type === "checkbox") input.checked = Boolean(value);
+      else input.value = value;
+    });
+  }
+
+  function sourceFieldValue(type, index, fieldName) {
+    const item = type === "driver" ? project.drivers[index] : project.manualSources[index];
+    if (!item) return "";
+    const source = type === "driver" ? item.source : item;
+    if (fieldName === "label") return item.label || "";
+    if (fieldName === "enabled") return source.enabled !== false;
+    if (fieldName === "x" || fieldName === "z") return item.center[fieldName];
+    if (fieldName === "diameter") return item.diameter;
+    return source[fieldName];
+  }
+
+  function duplicateSource(type, index) {
+    const offset = lengthValue(0.75);
+    if (type === "driver") {
+      const original = project.drivers[index];
+      if (!original) return;
+      const duplicate = cloneValue(original);
+      duplicate.id = uniqueSourceId("driver", project.drivers);
+      duplicate.label = copyLabel(original.label || original.id || "Driver");
+      duplicate.center = offsetCenter(duplicate.center, offset);
+      project.drivers.splice(index + 1, 0, duplicate);
+      selectedSourceKey = "driver:" + (index + 1);
+    } else {
+      const original = project.manualSources[index];
+      if (!original) return;
+      const duplicate = cloneValue(original);
+      duplicate.id = uniqueSourceId("source", project.manualSources);
+      duplicate.label = copyLabel(original.label || original.id || "Point source");
+      duplicate.center = offsetCenter(duplicate.center, offset);
+      project.manualSources.splice(index + 1, 0, duplicate);
+      selectedSourceKey = "manual:" + (index + 1);
+    }
+    overlaySourceKey = selectedSourceKey;
+    renderSources();
+    scheduleRebuild();
+    setExportStatus("Duplicated source.");
+  }
+
+  function copySourceSettings(type, index) {
+    const entries = sourceEntries();
+    const entry = entries.find((candidate) => candidate.type === type && candidate.index === index);
+    if (!entry) return;
+    copiedSourceSettings = {
+      type,
+      source: cloneValue(entry.source),
+      diameter: entry.type === "driver" ? entry.item.diameter : null
+    };
+    renderSources();
+    setExportStatus("Copied " + entry.label + " wave settings.");
+  }
+
+  function pasteSourceSettings(type, index) {
+    if (!copiedSourceSettings) return;
+    const item = type === "driver" ? project.drivers[index] : project.manualSources[index];
+    if (!item) return;
+    const source = type === "driver" ? item.source : item;
+    ["enabled", "amplitude", "wavelength", "phase", "falloff"].forEach((fieldName) => {
+      if (Object.prototype.hasOwnProperty.call(copiedSourceSettings.source, fieldName)) {
+        source[fieldName] = copiedSourceSettings.source[fieldName];
+      }
+    });
+    if (type === "driver" && Number.isFinite(Number(copiedSourceSettings.diameter))) {
+      item.diameter = Number(copiedSourceSettings.diameter);
+    }
+    selectedSourceKey = type + ":" + index;
+    overlaySourceKey = overlaySourceKey || selectedSourceKey;
+    renderSources();
+    scheduleRebuild();
+    setExportStatus("Pasted wave settings.");
+  }
+
+  function removeSource(type, index) {
+    if (type === "driver") project.drivers.splice(index, 1);
+    else project.manualSources.splice(index, 1);
+    selectedSourceKey = "";
+    overlaySourceKey = "";
+    renderSources();
+    scheduleRebuild();
+  }
+
+  function offsetCenter(center, offset) {
+    const dims = project.cabinet.dimensions;
+    const next = cloneValue(center || { x: 0, z: dims.height / 2 });
+    const x = Number.isFinite(Number(next.x)) ? Number(next.x) : 0;
+    const z = Number.isFinite(Number(next.z)) ? Number(next.z) : dims.height / 2;
+    next.x = Math.max(-dims.width / 2, Math.min(dims.width / 2, x + offset));
+    next.z = Math.max(0, Math.min(dims.height, z + offset));
+    return next;
+  }
+
+  function copyLabel(label) {
+    return String(label || "Source").replace(/\s+copy\s*\d*$/i, "") + " copy";
+  }
+
+  function uniqueSourceId(prefix, collection) {
+    const ids = new Set(collection.map((item) => item.id));
+    let index = collection.length + 1;
+    let id = prefix + "-" + index;
+    while (ids.has(id)) {
+      index += 1;
+      id = prefix + "-" + index;
+    }
+    return id;
+  }
+
+  function cloneValue(value) {
+    return JSON.parse(JSON.stringify(value));
   }
 
   function scheduleRebuild() {
@@ -513,9 +703,7 @@
     const hits = raycaster.intersectObjects(previewRoot.children, true);
     const sourceHit = hits.map((hit) => sourceKeyFromObject(hit.object)).find(Boolean);
     if (sourceHit) {
-      selectedSourceKey = sourceHit;
-      renderSources();
-      drawMesh(mesh);
+      selectSource(sourceHit, true);
     }
   }
 
