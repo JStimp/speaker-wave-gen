@@ -2,6 +2,16 @@
   "use strict";
 
   const FACE_NAMES = ["front", "back", "left", "right", "top", "bottom"];
+  const DFM_PANEL_ORDER = ["front", "right", "back", "left", "top", "bottom"];
+  const DFM_DEFAULT_EDGE_OWNERS = {
+    front: ["left", "right"],
+    right: ["top", "bottom"],
+    back: ["left", "right"],
+    left: ["top", "bottom"],
+    top: ["bottom", "top"],
+    bottom: ["bottom", "top"]
+  };
+  const LOCAL_PANEL_EDGES = ["left", "right", "top", "bottom"];
   const RESOLUTION_PRESETS = {
     draft: 10,
     low: 20,
@@ -86,7 +96,14 @@
     panelization: {
       mode: "separated",
       includeBack: false,
-      cornerStrategy: "matchedReliefEdges"
+      cornerStrategy: "matchedReliefEdges",
+      dfm: {
+        enabled: true,
+        edgeOwnership: "balancedTwoEdge",
+        maxCurvedEdgesPerPanel: 2,
+        edgeRadius: 0.75,
+        layoutGap: 4
+      }
     },
     export: {
       formats: ["json", "obj", "stl", "step"],
@@ -401,6 +418,233 @@
     };
   }
 
+  function dfmPanelPlan(project) {
+    const normalized = normalizeProject(project);
+    const dims = dimensions(normalized);
+    const dfm = dfmSettings(normalized);
+    const edgeRadius = Math.max(0, Number(dfm.edgeRadius) || 0);
+
+    const panels = DFM_PANEL_ORDER.map((face) => {
+      const ownedEdges = ownedEdgesForPanel(normalized, face);
+      const flatEdges = LOCAL_PANEL_EDGES.filter((edge) => ownedEdges.indexOf(edge) === -1);
+      const size = faceSize(face, dims);
+      return {
+        face,
+        label: panelLabel(face),
+        width: size.width,
+        height: size.height,
+        ownedEdges,
+        flatEdges,
+        ownedEdgeLabels: panelEdgeLabels(face, ownedEdges),
+        flatEdgeLabels: panelEdgeLabels(face, flatEdges),
+        edgeRadius,
+        curvedEdgeCount: ownedEdges.length,
+        valid: ownedEdges.length <= (Number(dfm.maxCurvedEdgesPerPanel) || 2)
+      };
+    });
+
+    return {
+      edgeRadius,
+      layoutGap: Math.max(0, Number(dfm.layoutGap) || 0),
+      maxCurvedEdgesPerPanel: Number(dfm.maxCurvedEdgesPerPanel) || 2,
+      panels,
+      warnings: panels
+        .filter((panel) => !panel.valid)
+        .map((panel) => panel.label + " owns " + panel.curvedEdgeCount + " curved edges.")
+    };
+  }
+
+  function generateDfmPanelMeshes(project, options) {
+    const normalized = normalizeProject(project);
+    const dims = dimensions(normalized);
+    const dfm = dfmSettings(normalized);
+    const resolution = (options && options.resolution) || normalized.export.resolution || "high";
+    const baseCells = typeof resolution === "number" ? resolution : RESOLUTION_PRESETS[resolution] || RESOLUTION_PRESETS.high;
+    const panelPlan = dfmPanelPlan(normalized);
+    const thickness = Math.max(0.001, Number(dims.wallThickness) || 0.75);
+    const edgeRadius = Math.max(0, Number(dfm.edgeRadius) || panelPlan.edgeRadius || 0);
+    const edgeDrop = Math.min(thickness * 0.82, edgeRadius);
+    const layoutGap = Math.max(0, Number(dfm.layoutGap) || 0);
+    const maxWidth = Math.max.apply(null, panelPlan.panels.map((panel) => panel.width));
+    const maxHeight = Math.max.apply(null, panelPlan.panels.map((panel) => panel.height));
+    const cellWidth = maxWidth + layoutGap;
+    const cellHeight = maxHeight + layoutGap;
+
+    const panels = panelPlan.panels.map((panel, index) => {
+      const column = index % 3;
+      const row = Math.floor(index / 3);
+      const origin = {
+        x: (column - 1) * cellWidth,
+        y: (0.5 - row) * cellHeight,
+        z: 0
+      };
+      return buildDfmPanelMesh(normalized, panel, baseCells, thickness, edgeRadius, edgeDrop, origin);
+    });
+
+    const vertexCount = panels.reduce((sum, panel) => sum + panel.vertices.length / 3, 0);
+    const triangleCount = panels.reduce((sum, panel) => sum + panel.indices.length / 3, 0);
+    return {
+      units: normalized.units,
+      resolution,
+      thickness,
+      edgeRadius,
+      layoutGap,
+      panels,
+      plan: panelPlan,
+      summary: {
+        panelCount: panels.length,
+        vertexCount,
+        triangleCount,
+        maxCurvedEdgesPerPanel: panelPlan.maxCurvedEdgesPerPanel
+      }
+    };
+  }
+
+  function buildDfmPanelMesh(project, panel, baseCells, thickness, edgeRadius, edgeDrop, origin) {
+    const dims = dimensions(project);
+    const columns = Math.max(4, Math.round((panel.width / Math.max(dims.width, dims.height, dims.depth)) * baseCells));
+    const rows = Math.max(4, Math.round((panel.height / Math.max(dims.width, dims.height, dims.depth)) * baseCells));
+    const vertices = [];
+    const indices = [];
+    const heights = [];
+    const top = [];
+    const bottom = [];
+    const topGrid = [];
+    const bottomGrid = [];
+
+    for (let row = 0; row <= rows; row += 1) {
+      const topRow = [];
+      const bottomRow = [];
+      const topPointRow = [];
+      const bottomPointRow = [];
+      const v = row / rows;
+      for (let column = 0; column <= columns; column += 1) {
+        const u = column / columns;
+        const local = panelLocalPoint(panel, u, v);
+        const point = pointOnFace(panel.face, u, v, dims, project);
+        const wave = computeWaveDisplacement(point, project);
+        const drop = dfmEdgeDrop(u, v, panel.width, panel.height, panel.ownedEdges, edgeRadius, edgeDrop);
+        const topZ = Math.max(0.001, thickness + wave.displacement - drop);
+        const topPoint = { x: origin.x + local.x, y: origin.y + local.y, z: topZ };
+        const bottomPoint = { x: origin.x + local.x, y: origin.y + local.y, z: 0 };
+        topRow.push(addDfmVertex(vertices, topPoint.x, topPoint.y, topPoint.z));
+        bottomRow.push(addDfmVertex(vertices, bottomPoint.x, bottomPoint.y, bottomPoint.z));
+        topPointRow.push(topPoint);
+        bottomPointRow.push(bottomPoint);
+        heights.push(wave.displacement - drop);
+      }
+      top.push(topRow);
+      bottom.push(bottomRow);
+      topGrid.push(topPointRow);
+      bottomGrid.push(bottomPointRow);
+    }
+
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const a = top[row][column];
+        const b = top[row][column + 1];
+        const c = top[row + 1][column];
+        const d = top[row + 1][column + 1];
+        indices.push(a, c, b, b, c, d);
+
+        const ba = bottom[row][column];
+        const bb = bottom[row][column + 1];
+        const bc = bottom[row + 1][column];
+        const bd = bottom[row + 1][column + 1];
+        indices.push(ba, bb, bc, bb, bd, bc);
+      }
+    }
+
+    appendDfmWall(indices, top[0], bottom[0], false);
+    appendDfmWall(indices, top.map((row) => row[row.length - 1]), bottom.map((row) => row[row.length - 1]), false);
+    appendDfmWall(indices, top[top.length - 1].slice().reverse(), bottom[bottom.length - 1].slice().reverse(), false);
+    appendDfmWall(indices, top.map((row) => row[0]).reverse(), bottom.map((row) => row[0]).reverse(), false);
+
+    return {
+      face: panel.face,
+      label: panel.label,
+      width: panel.width,
+      height: panel.height,
+      thickness,
+      edgeRadius,
+      ownedEdges: panel.ownedEdges.slice(),
+      flatEdges: panel.flatEdges.slice(),
+      ownedEdgeLabels: panel.ownedEdgeLabels.slice(),
+      flatEdgeLabels: panel.flatEdgeLabels.slice(),
+      columns,
+      rows,
+      topGrid,
+      bottomGrid,
+      vertices,
+      indices,
+      heights,
+      origin
+    };
+  }
+
+  function appendDfmWall(indices, topEdge, bottomEdge) {
+    for (let i = 0; i < topEdge.length - 1; i += 1) {
+      const a = topEdge[i];
+      const b = topEdge[i + 1];
+      const c = bottomEdge[i];
+      const d = bottomEdge[i + 1];
+      indices.push(a, b, c, b, d, c);
+    }
+  }
+
+  function addDfmVertex(vertices, x, y, z) {
+    const index = vertices.length / 3;
+    vertices.push(x, y, z);
+    return index;
+  }
+
+  function panelLocalPoint(panel, u, v) {
+    return {
+      x: (u - 0.5) * panel.width,
+      y: (v - 0.5) * panel.height
+    };
+  }
+
+  function dfmEdgeDrop(u, v, width, height, ownedEdges, edgeRadius, edgeDrop) {
+    if (edgeRadius <= 0 || edgeDrop <= 0 || !ownedEdges.length) return 0;
+    const distances = [];
+    if (ownedEdges.indexOf("left") !== -1) distances.push(u * width);
+    if (ownedEdges.indexOf("right") !== -1) distances.push((1 - u) * width);
+    if (ownedEdges.indexOf("bottom") !== -1) distances.push(v * height);
+    if (ownedEdges.indexOf("top") !== -1) distances.push((1 - v) * height);
+    if (!distances.length) return 0;
+    const distance = Math.min.apply(null, distances);
+    if (distance >= edgeRadius) return 0;
+    const t = 1 - distance / edgeRadius;
+    return edgeDrop * smootherstep(0, 1, t);
+  }
+
+  function ownedEdgesForPanel(project, face) {
+    const custom = project.panelization && project.panelization.dfm && project.panelization.dfm.edgeOwners;
+    const edges = custom && Array.isArray(custom[face]) ? custom[face] : DFM_DEFAULT_EDGE_OWNERS[face];
+    return (edges || []).filter((edge, index, array) => LOCAL_PANEL_EDGES.indexOf(edge) !== -1 && array.indexOf(edge) === index);
+  }
+
+  function dfmSettings(project) {
+    return (project.panelization && project.panelization.dfm) || {};
+  }
+
+  function panelLabel(face) {
+    return face.charAt(0).toUpperCase() + face.slice(1) + " panel";
+  }
+
+  function panelEdgeLabels(face, edges) {
+    return edges.map((edge) => physicalPanelEdgeLabel(face, edge));
+  }
+
+  function physicalPanelEdgeLabel(face, edge) {
+    if (face === "top" || face === "bottom") {
+      if (edge === "bottom") return "front";
+      if (edge === "top") return "back";
+    }
+    return edge;
+  }
+
   function gridForFace(face, dims, baseCells) {
     const size = faceSize(face, dims);
     const longest = Math.max(dims.width, dims.height, dims.depth);
@@ -513,16 +757,25 @@
     return t * t * (3 - 2 * t);
   }
 
+  function smootherstep(edge0, edge1, value) {
+    if (edge0 === edge1) return value >= edge1 ? 1 : 0;
+    const t = clamp01((value - edge0) / (edge1 - edge0));
+    return t * t * t * (t * (t * 6 - 15) + 10);
+  }
+
   window.WaveGeometry = {
     FACE_NAMES,
+    DFM_PANEL_ORDER,
     RESOLUTION_PRESETS,
     DEFAULT_PROJECT,
     createDefaultProject,
     normalizeProject,
+    dfmPanelPlan,
     pointOnFace,
     collectSources,
     surfaceDistanceToSource,
     computeWaveDisplacement,
-    generatePreviewMesh
+    generatePreviewMesh,
+    generateDfmPanelMeshes
   };
 }());

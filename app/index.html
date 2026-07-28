@@ -125,6 +125,16 @@
           </section>
 
           <section class="panel">
+            <h2>DFM Panels</h2>
+            <p class="status-text">Panel exports split the cabinet into six flat workholding solids. Each panel owns up to two routed curved edges; the other edges stay square for mating.</p>
+            <div class="grid-2">
+              <label data-tip="Radius distance used to roll owned panel edges downward for router-friendly roundovers.">Route radius <input data-path="panelization.dfm.edgeRadius" type="number" min="0" step="0.0625"></label>
+              <label data-tip="Spacing between separated panel parts in the exported OBJ/STL layout.">Layout gap <input data-path="panelization.dfm.layoutGap" type="number" min="0" step="0.25"></label>
+            </div>
+            <div id="dfm-panel-summary" class="dfm-panel-summary"></div>
+          </section>
+
+          <section class="panel">
             <h2>Output</h2>
             <label data-tip="Controls mesh density for OBJ/STL and source sampling for browser STEP. Higher quality improves detail and can slow SolidWorks imports.">Export quality
               <select data-path="export.resolution">
@@ -143,6 +153,11 @@
               </select>
             </label>
             <label data-tip="Controls Smooth surface STEP quality. Higher values fit each cabinet face with more spline control points; this can improve fidelity but may reduce import reliability.">Spline controls <input data-path="export.surfaceControlLimit" type="number" min="10" max="64" step="1"></label>
+            <div class="export-row">
+              <button id="export-dfm-step" class="primary" type="button" data-tip="Export six named smooth STEP panel solids for CNC/CAM planning. This is the DFM manufacturing output path.">DFM Panel STEP</button>
+              <button id="export-dfm-obj" class="secondary" type="button" data-tip="Export six DFM panel solids in one OBJ file, laid out flat for CNC planning.">DFM Panels OBJ</button>
+              <button id="export-dfm-stl" class="secondary" type="button" data-tip="Export six DFM panel solids in one STL file, laid out flat for CNC planning.">DFM Panels STL</button>
+            </div>
             <p id="export-status" class="status-text">Exports use the selected output quality, independent of preview resolution.</p>
           </section>
         </aside>

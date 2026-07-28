@@ -172,6 +172,9 @@
     document.getElementById("export-obj").addEventListener("click", () => exportMesh("obj"));
     document.getElementById("export-stl").addEventListener("click", () => exportMesh("stl"));
     document.getElementById("export-step").addEventListener("click", () => exportMesh("step"));
+    document.getElementById("export-dfm-step").addEventListener("click", () => exportDfmPanels("step"));
+    document.getElementById("export-dfm-obj").addEventListener("click", () => exportDfmPanels("obj"));
+    document.getElementById("export-dfm-stl").addEventListener("click", () => exportDfmPanels("stl"));
     document.getElementById("prepare-solid-step").addEventListener("click", prepareSolidStepProject);
     document.getElementById("save-png").addEventListener("click", saveScreenshot);
     document.getElementById("load-project").addEventListener("change", loadProjectFile);
@@ -733,6 +736,21 @@
     );
   }
 
+  function exportDfmPanels(format) {
+    const resolution = project.export.resolution || project.preview.resolution || "high";
+    const panelSet = Geometry.generateDfmPanelMeshes(project, { resolution });
+    if (format === "step") Exporters.exportDfmPanelsStep(project, panelSet);
+    if (format === "obj") Exporters.exportDfmPanelsObj(project, panelSet);
+    if (format === "stl") Exporters.exportDfmPanelsStl(project, panelSet);
+    const kind = format === "step" ? " smooth STEP" : " " + format.toUpperCase();
+    setExportStatus(
+      "DFM panel" + kind + " built at " + resolution + " quality (" +
+      panelSet.summary.panelCount + " panels / " +
+      panelSet.summary.vertexCount.toLocaleString() + " verts / " +
+      panelSet.summary.triangleCount.toLocaleString() + " tris)."
+    );
+  }
+
   function setExportStatus(message) {
     const status = document.getElementById("export-status");
     if (status) status.textContent = message;
@@ -1187,6 +1205,23 @@
         '<div><strong>Max absolute</strong><span>' + fmtDimension(summary.maxAbsHeight) + '</span></div>'
       ].join("");
     }
+
+    updateDfmPanelSummary();
+  }
+
+  function updateDfmPanelSummary() {
+    const summary = document.getElementById("dfm-panel-summary");
+    if (!summary) return;
+    const plan = Geometry.dfmPanelPlan(project);
+    summary.innerHTML = plan.panels.map((panel) => {
+      return [
+        "<div>",
+        "<strong>" + escapeHtml(panel.label) + "</strong>",
+        "<span>Routed: " + escapeHtml(panel.ownedEdgeLabels.join(", ")) + "</span>",
+        "<span>Square: " + escapeHtml(panel.flatEdgeLabels.join(", ")) + "</span>",
+        "</div>"
+      ].join("");
+    }).join("");
   }
 
   function resize() {
@@ -1345,7 +1380,10 @@
     convertSourceList(target.drivers, factor);
     convertSourceList(target.manualSources, factor);
 
-    if (target.panelization) multiplyFields(target.panelization, ["kerf", "edgeAllowance"], factor);
+    if (target.panelization) {
+      multiplyFields(target.panelization, ["kerf", "edgeAllowance"], factor);
+      if (target.panelization.dfm) multiplyFields(target.panelization.dfm, ["edgeRadius", "layoutGap"], factor);
+    }
   }
 
   function convertSourceList(items, factor) {

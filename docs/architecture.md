@@ -9,7 +9,7 @@ WaveGen3D is a static browser prototype. The first priority is a stable app that
 - Static browser UI in `app/`.
 - Vendored Three.js files in `app/vendor/`.
 - Browser-side geometry math in `app/geometry.js`.
-- Browser-side JSON/OBJ/STL/Smooth surface STEP exporters in `app/exporters.js`.
+- Browser-side JSON/OBJ/STL/Smooth surface STEP and DFM panel exporters in `app/exporters.js`.
 - Docker-only CAD-kernel STEP solid exporter in `solid-step-exporter/`.
 
 ## Data Flow
@@ -19,7 +19,7 @@ User edits controls
   -> project object updates in memory
   -> geometry mesh rebuilds in the browser
   -> Three.js preview redraws
-  -> user downloads JSON, OBJ, STL, browser STEP, or PNG
+  -> user downloads JSON, OBJ, STL, assembled browser STEP, DFM panel STEP, or PNG
   -> optional saved JSON goes through Docker solid STEP exporter
 ```
 
@@ -32,6 +32,8 @@ The prototype supports a rectangular enclosure. Coordinates follow a CAD-style f
 - Z is cabinet height, with the bottom surface on `Z=0`.
 
 The wave field is evaluated on the full cuboid shell before any panel thinking, so shared edges use the same relief height.
+
+DFM panel export derives six flat-workholding panel solids from that same field. The first fixed split gives each panel no more than two routed/radiused edges and keeps the remaining edges square for mating.
 
 Front-mounted sources use a cuboid-unfolding distance model on sharp cabinets. When corner wrap is enabled, the wave field switches to the rounded 3D surface positions at wrapped edges so adjacent faces keep matched relief.
 
@@ -53,7 +55,7 @@ Analysis planes show the current min/max relief offsets around the cabinet, whil
 
 Sources are edited through compact selectable chips plus one focused editor. Clicking a source marker in the preview also selects that source, so source changes do not require scrolling through every driver.
 
-Preview mesh resolution and output mesh quality are separate. The preview can stay responsive while OBJ, STL, and browser STEP exports rebuild from a denser mesh.
+Preview mesh resolution and output mesh quality are separate. The preview can stay responsive while OBJ, STL, browser STEP, and DFM panel exports rebuild from denser geometry.
 
 ## Stability Boundary
 

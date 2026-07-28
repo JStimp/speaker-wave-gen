@@ -5,7 +5,7 @@ This file tracks the practical work being done in the repo so the project has a 
 ## Current Direction
 
 - Build a static browser prototype for configuring a rectangular speaker enclosure with continuous 3D wave-interference relief.
-- Treat the cabinet as a full 3D shell first, then derive routable panels later from that shared surface so corner boundaries match.
+- Treat the cabinet as a full 3D shell first, then derive routable DFM panels from that shared surface so corner boundaries match.
 - Keep preview launch independent of OpenCascade/OCP, Docker, Python, Node, npm, Vite, Rollup, and Electron.
 - Treat smooth, reliable SolidWorks solid STEP as the main CAD export goal. Smooth surface browser STEP is the default prototype output; faceted browser STEP is retained only as a compatibility fallback.
 - Use Docker only for the separate analytic/CAD-kernel STEP experiments.
@@ -30,6 +30,7 @@ This file tracks the practical work being done in the repo so the project has a 
 - Changed the default browser STEP mode to Smooth surface STEP and kept faceted solid STEP as an import troubleshooting fallback.
 - Added corner wrap geometry for smoother wrapped edges while preserving a flat underside contact patch.
 - Added browser JSON, OBJ, STL, Smooth surface STEP, faceted fallback STEP, and PNG exports.
+- Added first-pass DFM panel exports: six flat-workholding panel solids with no more than two routed curved edges per panel, plus Smooth STEP, OBJ, and STL downloads.
 - Added a Docker-only CadQuery/OCP solid STEP exporter for the first outer-block SolidWorks import path.
 - Added an example `default-speaker.wavecad.json` project.
 - Added a browser smoke test page.
@@ -53,7 +54,9 @@ This file tracks the practical work being done in the repo so the project has a 
 - Browser file dialogs use upload/download controls.
 - OBJ/STL are mesh exports, not editable CAD surfaces.
 - Browser STEP defaults to the Smooth surface BREP path. Smooth reliable solid STEP remains the overall export goal; the Docker exporter is the separate CAD-kernel path toward stronger validation.
-- The Docker exporter currently targets one outer solid block; hollow shells, cutouts, and separated CAD panels remain future work.
+- DFM panel STEP is a browser-generated smooth BREP prototype, not a fully validated CAD-kernel sew.
+- DFM panel outputs do not include rabbets, screw holes, driver cutouts, internal clearances, or final joinery yet.
+- The Docker exporter currently targets one outer solid block; hollow shells, cutouts, and CAD-kernel separated panels remain future work.
 
 ## Verification Run By Codex
 

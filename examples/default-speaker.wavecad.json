@@ -73,7 +73,14 @@
     "includeBack": false,
     "cornerStrategy": "matchedReliefEdges",
     "kerf": 0,
-    "edgeAllowance": 2
+    "edgeAllowance": 2,
+    "dfm": {
+      "enabled": true,
+      "edgeOwnership": "balancedTwoEdge",
+      "maxCurvedEdgesPerPanel": 2,
+      "edgeRadius": 0.75,
+      "layoutGap": 4
+    }
   },
   "export": {
     "formats": ["json", "obj", "stl", "step"],

@@ -304,6 +304,17 @@ button:focus,
   gap: 7px;
 }
 
+.export-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin: 10px 0;
+}
+
+.export-row .primary {
+  grid-column: 1 / -1;
+}
+
 .button-row button {
   min-height: 30px;
   padding: 5px 8px;
@@ -459,7 +470,8 @@ button:focus,
   margin-top: 10px;
 }
 
-.analysis-stats div {
+.analysis-stats div,
+.dfm-panel-summary div {
   display: grid;
   gap: 3px;
   min-width: 0;
@@ -469,16 +481,28 @@ button:focus,
   background: #11130f;
 }
 
-.analysis-stats strong {
+.analysis-stats strong,
+.dfm-panel-summary strong {
   color: #aeb6a7;
   font-size: 11px;
   font-weight: 600;
 }
 
-.analysis-stats span {
+.analysis-stats span,
+.dfm-panel-summary span {
   color: #eef2e8;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
+}
+
+.dfm-panel-summary {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.dfm-panel-summary span {
+  line-height: 1.3;
 }
 
 .note p {

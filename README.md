@@ -32,6 +32,7 @@ You can also open `app/index.html` directly in a browser.
 - Hover tooltips on controls, including STEP-specific notes for export quality and spline controls.
 - Orbit/pan/zoom 3D viewport using vendored Three.js files.
 - Browser downloads for `.wavecad.json`, `.obj`, `.stl`, Smooth surface STEP, optional Docker STEP project `.wavecad.json`, and preview `.png`.
+- DFM panel exports for six flat-workholding panel solids: Smooth STEP for CAD/CAM plus OBJ/STL debug exports.
 - OBJ/STL/browser STEP exports use a separate output quality setting, so they can be higher resolution or smoother than the live preview.
 - Higher default preview/detail settings for inspecting wave relief without immediately changing controls.
 - Default STEP export uses Smooth surface STEP. Faceted solid STEP remains available as a fallback when troubleshooting CAD imports.
@@ -63,7 +64,7 @@ Open:
 app/smoke-test.html
 ```
 
-It checks that the default project loads, mesh vertices are finite, rounded front/right seam heights match, flat-bottom floor relief behaves correctly, the export mesh is higher resolution than the preview mesh, and OBJ/STL/STEP exporters produce text.
+It checks that the default project loads, mesh vertices are finite, rounded front/right seam heights match, flat-bottom floor relief behaves correctly, the export mesh is higher resolution than the preview mesh, DFM panel bottoms stay flat, and OBJ/STL/STEP exporters produce text.
 
 ## STEP Direction
 
@@ -73,4 +74,4 @@ The static app defaults to Smooth surface STEP because that is the production-di
 Export-Solid-Step.bat
 ```
 
-From the browser, use `Export STEP` for the default Smooth surface STEP. Switch `STEP type` to Faceted solid fallback only when you need a compatibility test. `Docker JSON` downloads a `.solid-step.wavecad.json` file for `Export-Solid-Step.bat`. The first solid target is an outer block only; hollow walls, cutouts, and separated panels are later steps.
+From the browser, use `Export STEP` for the assembled Smooth surface STEP reference. Use `DFM Panel STEP` for the six separate flat-workholding panel solids. Switch `STEP type` to Faceted solid fallback only when you need a compatibility test for the assembled reference body. `Docker JSON` downloads a `.solid-step.wavecad.json` file for `Export-Solid-Step.bat`; that Docker path remains an outer-block experiment.

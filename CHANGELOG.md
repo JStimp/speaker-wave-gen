@@ -23,6 +23,7 @@
 - Added JSON, OBJ, STL, Smooth surface STEP, faceted fallback STEP, and PNG browser exports.
 - Added a Docker-only CadQuery/OCP solid STEP exporter with a drag/drop Windows launcher for SolidWorks outer-block solids.
 - Added a Docker JSON browser export that saves the `.wavecad.json` intended for the separate Docker solid exporter.
+- Added DFM panel exports for six flat-workholding panel solids, including Smooth STEP plus OBJ/STL debug downloads.
 - Added browser smoke test page and dependency-free solid-exporter geometry tests.
 - Reduced CI to static checks only.
 

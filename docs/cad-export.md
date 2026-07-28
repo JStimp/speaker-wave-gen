@@ -8,6 +8,8 @@ The static app exports:
 - `.obj`
 - `.stl`
 - Smooth surface browser `.step`
+- DFM panel Smooth surface browser `.step`
+- DFM panel `.obj` and `.stl`
 - Solid STEP project `.wavecad.json`
 - `.png` preview screenshot
 
@@ -26,4 +28,8 @@ For the separate CAD-kernel path, click `Docker JSON` in the browser, then drag 
 
 ## Panel Strategy
 
-The surface is generated as a full cuboid shell first. Panels can be derived later from face samples, which preserves matched relief along shared edges.
+The surface is generated as a full cuboid shell first. DFM panel export then derives six flat-workholding panel bodies from the same wave field.
+
+The fixed first-pass split gives each panel no more than two routed curved edges. The other two local edges stay square for mating and workholding. The STEP panel export writes six named smooth BREP bodies in one file; OBJ and STL panel exports are kept as preview/debug outputs.
+
+This DFM path intentionally does not add rabbets, screw holes, driver cutouts, internal clearances, or final assembly joinery yet.

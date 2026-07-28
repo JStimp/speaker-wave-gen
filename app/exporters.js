@@ -93,27 +93,7 @@
     const faceIds = [];
 
     patches.forEach((patch) => {
-      const uCount = patch.points.length;
-      const vCount = patch.points[0].length;
-      const uDegree = Math.min(3, uCount - 1);
-      const vDegree = Math.min(3, vCount - 1);
-      const controlRows = patch.points.map((column) => "(" + column.map((point) => addPoint(add, point)).join(",") + ")");
-      const uKnots = knotSpec(uCount, uDegree);
-      const vKnots = knotSpec(vCount, vDegree);
-      const surface = add(
-        "B_SPLINE_SURFACE_WITH_KNOTS(''," + uDegree + "," + vDegree + ",(" + controlRows.join(",") +
-        "),.UNSPECIFIED.,.F.,.F.,.F.," + uKnots.mults + "," + vKnots.mults + "," +
-        uKnots.values + "," + vKnots.values + ",.UNSPECIFIED.)"
-      );
-      const orientedEdges = [
-        orientedEdgeForPoints(add, edgeMap, patch.bottom),
-        orientedEdgeForPoints(add, edgeMap, patch.right),
-        orientedEdgeForPoints(add, edgeMap, patch.top),
-        orientedEdgeForPoints(add, edgeMap, patch.left)
-      ];
-      const loop = add("EDGE_LOOP('',(" + orientedEdges.join(",") + "))");
-      const bound = add("FACE_OUTER_BOUND(''," + loop + ",.T.)");
-      faceIds.push(add("ADVANCED_FACE('',(" + bound + ")," + surface + ",.T.)"));
+      faceIds.push(addSplineFace(add, edgeMap, patch));
     });
 
     const shell = add("CLOSED_SHELL('',(" + faceIds.join(",") + "))");
@@ -157,6 +137,203 @@
   function exportStep(project, mesh) {
     const name = safeName(project.project.name || "wavegen3d");
     downloadText(name + ".step", meshToStep(mesh, project, name), "application/step");
+  }
+
+  function exportDfmPanelsObj(project, panelSet) {
+    const name = safeName(project.project.name || "wavegen3d");
+    downloadText(name + ".dfm-panels.obj", panelSetToObj(panelSet, name), "text/plain");
+  }
+
+  function exportDfmPanelsStl(project, panelSet) {
+    const name = safeName(project.project.name || "wavegen3d");
+    downloadText(name + ".dfm-panels.stl", panelSetToStl(panelSet, name), "model/stl");
+  }
+
+  function exportDfmPanelsStep(project, panelSet) {
+    const name = safeName(project.project.name || "wavegen3d");
+    downloadText(name + ".dfm-panels.step", panelSetToStep(panelSet, project, name), "application/step");
+  }
+
+  function panelSetToObj(panelSet, name) {
+    const lines = [
+      "# WaveGen3D DFM panel export",
+      "# Project: " + (name || "wavegen3d"),
+      "# Units: " + (panelSet.units || "in"),
+      "# Routed edges are owned by that panel and roll down for CNC machining.",
+      "# Flat edges stay square so another panel can meet them or the blank can be held flat."
+    ];
+    let vertexOffset = 1;
+
+    panelSet.panels.forEach((panel) => {
+      lines.push("");
+      lines.push("o " + safeName(panel.face + "_panel"));
+      lines.push("# label: " + panel.label);
+      lines.push("# nominal_size: " + fmt(panel.width) + " x " + fmt(panel.height) + " " + (panelSet.units || "in"));
+      lines.push("# thickness: " + fmt(panel.thickness) + " " + (panelSet.units || "in"));
+      lines.push("# routed_curved_edges: " + panel.ownedEdges.join(","));
+      lines.push("# flat_mating_edges: " + panel.flatEdges.join(","));
+      lines.push("# edge_radius: " + fmt(panel.edgeRadius) + " " + (panelSet.units || "in"));
+
+      for (let i = 0; i < panel.vertices.length; i += 3) {
+        lines.push("v " + fmt(panel.vertices[i]) + " " + fmt(panel.vertices[i + 1]) + " " + fmt(panel.vertices[i + 2]));
+      }
+      for (let i = 0; i < panel.indices.length; i += 3) {
+        lines.push(
+          "f " +
+          (panel.indices[i] + vertexOffset) + " " +
+          (panel.indices[i + 1] + vertexOffset) + " " +
+          (panel.indices[i + 2] + vertexOffset)
+        );
+      }
+      vertexOffset += panel.vertices.length / 3;
+    });
+
+    return lines.join("\n") + "\n";
+  }
+
+  function panelSetToStl(panelSet, name) {
+    const lines = [];
+
+    panelSet.panels.forEach((panel) => {
+      const solidName = safeName(panel.face + "_panel_curved_" + panel.ownedEdges.join("_"));
+      lines.push("  solid " + solidName);
+      for (let i = 0; i < panel.indices.length; i += 3) {
+        const a = vertex(panel.vertices, panel.indices[i]);
+        const b = vertex(panel.vertices, panel.indices[i + 1]);
+        const c = vertex(panel.vertices, panel.indices[i + 2]);
+        const n = triangleNormal(a, b, c);
+        lines.push("    facet normal " + fmt(n.x) + " " + fmt(n.y) + " " + fmt(n.z));
+        lines.push("      outer loop");
+        lines.push("        vertex " + fmt(a.x) + " " + fmt(a.y) + " " + fmt(a.z));
+        lines.push("        vertex " + fmt(b.x) + " " + fmt(b.y) + " " + fmt(b.z));
+        lines.push("        vertex " + fmt(c.x) + " " + fmt(c.y) + " " + fmt(c.z));
+        lines.push("      endloop");
+        lines.push("    endfacet");
+      }
+      lines.push("  endsolid " + solidName);
+    });
+
+    return lines.join("\n") + "\n";
+  }
+
+  function panelSetToStep(panelSet, project, name) {
+    const title = safeStepString((name || "wavegen3d") + " DFM panels");
+    const stepProject = project || { units: panelSet.units || "in" };
+    const model = createStepModel(stepProject, title, "WaveGen3D DFM smooth panel STEP");
+    const add = model.add;
+    const controlLimit = Math.max(10, Math.min(64, Number(project && project.export && project.export.surfaceControlLimit) || 34));
+    const bodies = [];
+
+    panelSet.panels.forEach((panel) => {
+      const edgeMap = new Map();
+      const faceIds = dfmPanelSurfacePatches(panel, controlLimit).map((patch) => addSplineFace(add, edgeMap, patch));
+      const shell = add("CLOSED_SHELL('',(" + faceIds.join(",") + "))");
+      bodies.push(add("MANIFOLD_SOLID_BREP('" + safeStepString(panel.label + " DFM solid") + "'," + shell + ")"));
+    });
+
+    const representationItems = [model.placement].concat(bodies).join(",");
+    const representation = add("ADVANCED_BREP_SHAPE_REPRESENTATION('',(" + representationItems + ")," + model.context + ")");
+    add("SHAPE_DEFINITION_REPRESENTATION(" + model.definitionShape + "," + representation + ")");
+    return finishStep(model, "WaveGen3D DFM smooth panel STEP");
+  }
+
+  function dfmPanelSurfacePatches(panel, controlLimit) {
+    const top = panel.topGrid;
+    const bottom = panel.bottomGrid;
+    const lastRow = top.length - 1;
+    const lastColumn = top[0].length - 1;
+    return [
+      makeSurfacePatch(sampleGridAsColumns(top, controlLimit)),
+      makeSurfacePatch(sampleGridAsColumns(bottom, controlLimit, { reverseRows: true })),
+      makeSurfacePatch(edgeSurfaceColumns(top[0], bottom[0], controlLimit)),
+      makeSurfacePatch(edgeSurfaceColumns(
+        top.map((row) => row[lastColumn]),
+        bottom.map((row) => row[lastColumn]),
+        controlLimit
+      )),
+      makeSurfacePatch(edgeSurfaceColumns(top[lastRow].slice().reverse(), bottom[lastRow].slice().reverse(), controlLimit)),
+      makeSurfacePatch(edgeSurfaceColumns(
+        top.map((row) => row[0]).reverse(),
+        bottom.map((row) => row[0]).reverse(),
+        controlLimit
+      ))
+    ];
+  }
+
+  function makeSurfacePatch(points, faceSense) {
+    return {
+      points,
+      faceSense: faceSense !== false,
+      bottom: points.map((column) => column[0]),
+      right: points[points.length - 1].slice(),
+      top: points.map((column) => column[column.length - 1]).reverse(),
+      left: points[0].slice().reverse()
+    };
+  }
+
+  function sampleGridAsColumns(grid, maxControls, options) {
+    const rowCount = grid.length;
+    const columnCount = grid[0].length;
+    const uCount = Math.max(2, Math.min(maxControls, columnCount));
+    const vCount = Math.max(2, Math.min(maxControls, rowCount));
+    const reverseColumns = options && options.reverseColumns;
+    const reverseRows = options && options.reverseRows;
+    const columns = [];
+
+    for (let u = 0; u < uCount; u += 1) {
+      const sourceColumn = sampleIndex(u, uCount, columnCount, reverseColumns);
+      const column = [];
+      for (let v = 0; v < vCount; v += 1) {
+        const sourceRow = sampleIndex(v, vCount, rowCount, reverseRows);
+        column.push(copyPoint(grid[sourceRow][sourceColumn]));
+      }
+      columns.push(column);
+    }
+
+    return columns;
+  }
+
+  function edgeSurfaceColumns(topEdge, bottomEdge, maxControls) {
+    const count = Math.max(2, Math.min(maxControls, topEdge.length));
+    const columns = [];
+    for (let i = 0; i < count; i += 1) {
+      const index = sampleIndex(i, count, topEdge.length, false);
+      columns.push([copyPoint(bottomEdge[index]), copyPoint(topEdge[index])]);
+    }
+    return columns;
+  }
+
+  function sampleIndex(index, sampleCount, sourceCount, reverse) {
+    const value = sampleCount <= 1 ? 0 : Math.round((index / (sampleCount - 1)) * (sourceCount - 1));
+    return reverse ? sourceCount - 1 - value : value;
+  }
+
+  function copyPoint(point) {
+    return { x: point.x, y: point.y, z: point.z };
+  }
+
+  function addSplineFace(add, edgeMap, patch) {
+    const uCount = patch.points.length;
+    const vCount = patch.points[0].length;
+    const uDegree = Math.min(3, uCount - 1);
+    const vDegree = Math.min(3, vCount - 1);
+    const controlRows = patch.points.map((column) => "(" + column.map((point) => addPoint(add, point)).join(",") + ")");
+    const uKnots = knotSpec(uCount, uDegree);
+    const vKnots = knotSpec(vCount, vDegree);
+    const surface = add(
+      "B_SPLINE_SURFACE_WITH_KNOTS(''," + uDegree + "," + vDegree + ",(" + controlRows.join(",") +
+      "),.UNSPECIFIED.,.F.,.F.,.F.," + uKnots.mults + "," + vKnots.mults + "," +
+      uKnots.values + "," + vKnots.values + ",.UNSPECIFIED.)"
+    );
+    const orientedEdges = [
+      orientedEdgeForPoints(add, edgeMap, patch.bottom),
+      orientedEdgeForPoints(add, edgeMap, patch.right),
+      orientedEdgeForPoints(add, edgeMap, patch.top),
+      orientedEdgeForPoints(add, edgeMap, patch.left)
+    ];
+    const loop = add("EDGE_LOOP('',(" + orientedEdges.join(",") + "))");
+    const bound = add("FACE_OUTER_BOUND(''," + loop + ",.T.)");
+    return add("ADVANCED_FACE('',(" + bound + ")," + surface + "," + (patch.faceSense === false ? ".F." : ".T.") + ")");
   }
 
   function createStepModel(project, title, description) {
@@ -345,8 +522,14 @@
     exportObj,
     exportStl,
     exportStep,
+    exportDfmPanelsObj,
+    exportDfmPanelsStl,
+    exportDfmPanelsStep,
     meshToObj,
     meshToStl,
-    meshToStep
+    meshToStep,
+    panelSetToObj,
+    panelSetToStl,
+    panelSetToStep
   };
 }());
