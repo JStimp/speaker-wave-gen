@@ -54,6 +54,8 @@
         check("default project loads", project.project.name.length > 0);
         check("default browser STEP mode is smooth surface", project.export.stepMode === "smoothSurfaceStep");
         check("default panel visualization is assembled model", project.preview.panelMode === "model");
+        check("default zoom origin is screen center", project.preview.zoomOrigin === "center");
+        check("all DFM panels are visible by default", project.preview.visiblePanels.length === 6);
         check("all DFM panels are selected by default", project.panelization.dfm.exportPanels.length === 6);
         check("mesh has finite vertices", mesh.vertices.length > 0 && mesh.vertices.every(Number.isFinite));
         check("mesh summary includes relief deviation", mesh.summary.deviation > 0 && mesh.summary.maxAbsHeight > 0);

@@ -31,6 +31,10 @@ You can also open `app/index.html` directly in a browser.
 - Visual helpers for a floor origin marker, offset XYZ direction triad, outline box, floor grid, slim dimension guides, and min/max relief analysis planes.
 - Three CAD viewing modes: assembled model, transparent panel-split ghosts, and a selectable exploded six-panel view.
 - Clickable exploded panels with a compact properties window for blank size, thickness, routed edges, square mating edges, and export inclusion.
+- Console-style CAD interface with monospace engineering typography and phosphor, amber, cyan, and axis-color status accents.
+- Contextual top tool tabs for File, Build, Driver Source Config, Panels, and Export. The right tool dock can close completely to restore the full viewport.
+- Bottom-left View Tools drawer for display overlays, relief statistics, isometric reset, and center- or cursor-anchored wheel zoom.
+- Per-panel visibility controls for Panel Split and Exploded modes; viewport picks automatically open the matching Sources or Panels tool context.
 - Hover tooltips on controls, including STEP-specific notes for export quality and spline controls.
 - Orbit/pan/zoom 3D viewport using vendored Three.js files.
 - Browser downloads for `.wavecad.json`, `.obj`, `.stl`, Smooth surface STEP, and preview `.png`.

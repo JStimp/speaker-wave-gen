@@ -66,6 +66,15 @@
     "showAnalysis": false,
     "showGrid": true,
     "panelMode": "model",
+    "visiblePanels": [
+      "front",
+      "right",
+      "back",
+      "left",
+      "top",
+      "bottom"
+    ],
+    "zoomOrigin": "center",
     "colorMode": "relief",
     "heightContrast": 2.35
   },

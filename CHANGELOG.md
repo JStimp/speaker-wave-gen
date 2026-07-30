@@ -28,6 +28,13 @@
 - Added per-panel export selection and separate labeled STEP/OBJ/STL files written into a project output folder when the browser supports directory access.
 - Changed DFM STEP flat undersides and boundary faces to analytic STEP planes for stronger SolidWorks face recognition.
 - Consolidated project load/save controls and moved assembly/DFM export actions into one streamlined Output section.
+- Reworked the app into a console-style CAD interface with monospace typography and compact engineering status colors.
+- Added contextual File, Build, Driver Source Config, Panels, and Export tool tabs with active fill states and a fully collapsible right dock.
+- Moved display overlays, live deviation statistics, and isometric reset into a bottom-left View Tools drawer.
+- Added center-anchored and SolidWorks-style cursor-anchored wheel zoom modes.
+- Added independent show/hide controls for all six DFM panels in Panel Split and Exploded views.
+- Made source and exploded-panel viewport picks automatically open their matching tool context.
+- Added continuous viewer resize tracking so opening or closing the tool dock cannot leave a stale or blank Three.js canvas.
 - Added browser smoke test page and dependency-free solid-exporter geometry tests.
 - Reduced CI to static checks only.
 

@@ -23,16 +23,23 @@
   let grid = null;
   let raycaster = null;
   let pointer = null;
+  let viewerResizeObserver = null;
   let selectedSourceKey = "driver:0";
   let overlaySourceKey = "";
   let selectedPanelFace = "front";
   let overlayPanelFace = "";
   let copiedSourceSettings = null;
   let activeDimension = null;
+  let activeSidebarTab = "build";
   let rebuildTimer = 0;
   let viewInitialized = false;
   const labelWorldPosition = new THREE.Vector3();
   const rendererSize = new THREE.Vector2();
+  const zoomPlane = new THREE.Plane();
+  const zoomPlaneNormal = new THREE.Vector3();
+  const zoomAnchor = new THREE.Vector3();
+  const zoomOffset = new THREE.Vector3();
+  const zoomTargetOffset = new THREE.Vector3();
 
   window.addEventListener("DOMContentLoaded", init);
 
@@ -42,6 +49,7 @@
     initSourceOverlay();
     initPanelOverlay();
     bindControls();
+    openSidebar("build");
     syncForm();
     rebuild();
   }
@@ -49,7 +57,7 @@
   function initThree() {
     const viewer = document.getElementById("viewer");
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x10120f);
+    scene.background = new THREE.Color(0x07100d);
 
     camera = new THREE.PerspectiveCamera(34, 1, 1, 6000);
     camera.up.set(0, 0, 1);
@@ -62,6 +70,7 @@
     renderer.toneMappingExposure = 1.04;
     viewer.appendChild(renderer.domElement);
     renderer.domElement.addEventListener("pointerdown", handlePointerDown);
+    renderer.domElement.addEventListener("wheel", handleViewportWheel, { passive: false });
 
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -78,7 +87,7 @@
     rim.position.set(-450, 650, 250);
     scene.add(rim);
 
-    grid = new THREE.GridHelper(1100, 22, 0x3b3d34, 0x252820);
+    grid = new THREE.GridHelper(1100, 22, 0x315f4c, 0x173126);
     grid.rotation.x = Math.PI / 2;
     grid.position.z = 0;
     scene.add(grid);
@@ -86,6 +95,10 @@
     pointer = new THREE.Vector2();
 
     window.addEventListener("resize", resize);
+    if (window.ResizeObserver) {
+      viewerResizeObserver = new ResizeObserver(resize);
+      viewerResizeObserver.observe(viewer);
+    }
     resize();
     animate();
   }
@@ -108,6 +121,15 @@
     });
 
     document.getElementById("reset-view").addEventListener("click", resetView);
+    document.getElementById("view-tools-toggle").addEventListener("click", toggleViewTools);
+    document.getElementById("view-tools-close").addEventListener("click", closeViewTools);
+    document.getElementById("close-sidebar").addEventListener("click", closeSidebar);
+    document.querySelectorAll("[data-sidebar-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (activeSidebarTab === button.dataset.sidebarTab) closeSidebar();
+        else openSidebar(button.dataset.sidebarTab);
+      });
+    });
     document.querySelectorAll("[data-panel-mode]").forEach((button) => {
       button.addEventListener("click", () => {
         project.preview.panelMode = button.dataset.panelMode;
@@ -162,6 +184,7 @@
       });
       selectedSourceKey = "driver:" + index;
       overlaySourceKey = selectedSourceKey;
+      openSidebar("sources");
       renderSources();
       scheduleRebuild();
     });
@@ -182,6 +205,7 @@
       });
       selectedSourceKey = "manual:" + index;
       overlaySourceKey = selectedSourceKey;
+      openSidebar("sources");
       renderSources();
       scheduleRebuild();
     });
@@ -198,8 +222,16 @@
     document.getElementById("export-dfm-stl").addEventListener("click", () => exportDfmPanels("stl"));
     document.getElementById("select-all-panels").addEventListener("click", () => setAllPanelExports(true));
     document.getElementById("select-no-panels").addEventListener("click", () => setAllPanelExports(false));
+    document.getElementById("show-all-panels").addEventListener("click", () => setAllPanelVisibility(true));
+    document.getElementById("hide-all-panels").addEventListener("click", () => setAllPanelVisibility(false));
     document.getElementById("save-png").addEventListener("click", saveScreenshot);
     document.getElementById("load-project").addEventListener("change", loadProjectFile);
+    document.addEventListener("pointerdown", (event) => {
+      const popup = document.getElementById("view-tools-popup");
+      if (!popup || popup.hidden) return;
+      if (event.target.closest("#view-tools-popup") || event.target.closest("#view-tools-toggle")) return;
+      closeViewTools();
+    });
   }
 
   function initTooltipSystem() {
@@ -230,6 +262,75 @@
     overlay.hidden = true;
     overlay.innerHTML = '<div class="panel-overlay-window"><div id="panel-overlay-body" class="panel-overlay-body"></div></div>';
     document.body.appendChild(overlay);
+  }
+
+  function openSidebar(tab) {
+    const validTabs = ["file", "build", "sources", "panels", "export"];
+    activeSidebarTab = validTabs.indexOf(tab) !== -1 ? tab : "build";
+    const workspace = document.querySelector(".workspace");
+    const controlsPanel = document.querySelector(".controls");
+    if (workspace) workspace.classList.remove("sidebar-closed");
+    if (controlsPanel) controlsPanel.hidden = false;
+
+    document.querySelectorAll("[data-sidebar-section]").forEach((section) => {
+      section.hidden = section.dataset.sidebarSection !== activeSidebarTab;
+    });
+    document.querySelectorAll("[data-sidebar-tab]").forEach((button) => {
+      const active = button.dataset.sidebarTab === activeSidebarTab;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+
+    const titles = {
+      file: "File",
+      build: "Build",
+      sources: "Driver Source Config",
+      panels: "Panels",
+      export: "Export"
+    };
+    const title = document.getElementById("sidebar-title");
+    if (title) title.textContent = titles[activeSidebarTab];
+    requestAnimationFrame(resize);
+  }
+
+  function closeSidebar() {
+    activeSidebarTab = "";
+    const workspace = document.querySelector(".workspace");
+    const controlsPanel = document.querySelector(".controls");
+    if (workspace) workspace.classList.add("sidebar-closed");
+    if (controlsPanel) controlsPanel.hidden = true;
+    document.querySelectorAll("[data-sidebar-tab]").forEach((button) => {
+      button.classList.remove("active");
+      button.setAttribute("aria-pressed", "false");
+    });
+    requestAnimationFrame(resize);
+  }
+
+  function toggleViewTools() {
+    const popup = document.getElementById("view-tools-popup");
+    if (!popup) return;
+    if (popup.hidden) openViewTools();
+    else closeViewTools();
+  }
+
+  function openViewTools() {
+    const popup = document.getElementById("view-tools-popup");
+    const button = document.getElementById("view-tools-toggle");
+    if (popup) popup.hidden = false;
+    if (button) {
+      button.classList.add("active");
+      button.setAttribute("aria-expanded", "true");
+    }
+  }
+
+  function closeViewTools() {
+    const popup = document.getElementById("view-tools-popup");
+    const button = document.getElementById("view-tools-toggle");
+    if (popup) popup.hidden = true;
+    if (button) {
+      button.classList.remove("active");
+      button.setAttribute("aria-expanded", "false");
+    }
   }
 
   function prepareTooltips(root) {
@@ -334,6 +435,7 @@
     });
     renderSources();
     renderDfmExportSelection();
+    renderDfmVisibilityList();
     updatePanelModeButtons();
     updateControlAvailability();
   }
@@ -449,6 +551,7 @@
   function selectSource(key, showOverlay) {
     selectedSourceKey = key;
     if (showOverlay) overlaySourceKey = key;
+    openSidebar("sources");
     renderSources();
     if (mesh) drawMesh(mesh);
   }
@@ -809,6 +912,7 @@
     if (panelHit && currentPanelMode() === "exploded") {
       selectedPanelFace = panelHit;
       overlayPanelFace = panelHit;
+      openSidebar("panels");
       drawMesh(mesh);
       return;
     }
@@ -816,6 +920,39 @@
     if (sourceHit) {
       selectSource(sourceHit, true);
     }
+  }
+
+  function handleViewportWheel(event) {
+    if (!camera || !controls || !controls.enabled) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    const rect = renderer.domElement.getBoundingClientRect();
+    zoomAnchor.copy(controls.target);
+    if (project.preview.zoomOrigin === "cursor") {
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      camera.getWorldDirection(zoomPlaneNormal);
+      zoomPlane.setFromNormalAndCoplanarPoint(zoomPlaneNormal, controls.target);
+      if (!raycaster.ray.intersectPlane(zoomPlane, zoomAnchor)) zoomAnchor.copy(controls.target);
+    }
+
+    let delta = event.deltaY;
+    if (event.deltaMode === 1) delta *= 16;
+    if (event.deltaMode === 2) delta *= rect.height;
+    const factor = Math.exp(clamp(delta, -240, 240) * 0.0016);
+    const currentDistance = Math.max(0.0001, camera.position.distanceTo(controls.target));
+    const dims = project.cabinet.dimensions;
+    const span = Math.max(dims.width, dims.height, dims.depth);
+    const nextDistance = clamp(currentDistance * factor, Math.max(span * 0.06, 0.1), span * 14);
+    const appliedFactor = nextDistance / currentDistance;
+
+    zoomOffset.copy(camera.position).sub(zoomAnchor).multiplyScalar(appliedFactor);
+    zoomTargetOffset.copy(controls.target).sub(zoomAnchor).multiplyScalar(appliedFactor);
+    camera.position.copy(zoomAnchor).add(zoomOffset);
+    controls.target.copy(zoomAnchor).add(zoomTargetOffset);
+    controls.update();
   }
 
   function sourceKeyFromObject(object) {
@@ -1209,8 +1346,10 @@
     const dims = project.cabinet.dimensions;
     const span = Math.max(dims.width, dims.height, dims.depth);
     const separation = mode === "exploded" ? span * 0.42 : span * 0.0025;
+    const visibleFaces = visiblePanelFaces();
 
     panelSet.panels.forEach((panel) => {
+      if (visibleFaces.indexOf(panel.face) === -1) return;
       const positions = [];
       for (let i = 0; i < panel.vertices.length; i += 3) {
         const local = {
@@ -1459,6 +1598,51 @@
     project.panelization.dfm.exportPanels = enabled ? Geometry.DFM_PANEL_ORDER.slice() : [];
     renderDfmExportSelection();
     if (overlayPanelFace) renderPanelOverlay();
+  }
+
+  function renderDfmVisibilityList() {
+    const list = document.getElementById("dfm-visibility-list");
+    if (!list) return;
+    const plan = Geometry.dfmPanelPlan(project);
+    const visible = visiblePanelFaces();
+    list.innerHTML = plan.panels.map((panel) => {
+      const color = PANEL_COLORS[panel.face] || 0xd6b84d;
+      return [
+        '<label class="panel-visibility-option" style="--panel-color:' + colorCss(color) + '">',
+        '<input type="checkbox" data-panel-visible="' + panel.face + '" ' + (visible.indexOf(panel.face) !== -1 ? "checked" : "") + '>',
+        '<span class="panel-export-swatch"></span>',
+        '<span>' + escapeHtml(panel.label) + "</span>",
+        "</label>"
+      ].join("");
+    }).join("");
+    list.querySelectorAll("[data-panel-visible]").forEach((input) => {
+      input.addEventListener("change", () => setPanelVisibility(input.dataset.panelVisible, input.checked));
+    });
+  }
+
+  function visiblePanelFaces() {
+    const configured = project.preview && Array.isArray(project.preview.visiblePanels)
+      ? project.preview.visiblePanels
+      : Geometry.DFM_PANEL_ORDER;
+    return Geometry.DFM_PANEL_ORDER.filter((face) => configured.indexOf(face) !== -1);
+  }
+
+  function setPanelVisibility(face, visible) {
+    const current = visiblePanelFaces();
+    const next = visible
+      ? current.concat(face).filter((value, index, array) => array.indexOf(value) === index)
+      : current.filter((value) => value !== face);
+    project.preview.visiblePanels = Geometry.DFM_PANEL_ORDER.filter((value) => next.indexOf(value) !== -1);
+    if (!visible && overlayPanelFace === face) closePanelOverlay();
+    renderDfmVisibilityList();
+    if (mesh) drawMesh(mesh);
+  }
+
+  function setAllPanelVisibility(visible) {
+    project.preview.visiblePanels = visible ? Geometry.DFM_PANEL_ORDER.slice() : [];
+    if (!visible) closePanelOverlay();
+    renderDfmVisibilityList();
+    if (mesh) drawMesh(mesh);
   }
 
   function currentPanelMode() {

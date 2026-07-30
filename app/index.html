@@ -11,8 +11,16 @@
       <header class="topbar">
         <div class="brand">
           <strong>WaveGen3D</strong>
-          <span>Static speaker wave CAD prototype</span>
+          <span>GEOMETRY TERMINAL // DFM</span>
         </div>
+        <nav class="tool-tabs" aria-label="Tool panels">
+          <button type="button" data-sidebar-tab="file">File</button>
+          <button type="button" data-sidebar-tab="build">Build</button>
+          <button type="button" data-sidebar-tab="sources">Driver Source Config</button>
+          <button type="button" data-sidebar-tab="panels">Panels</button>
+          <button type="button" data-sidebar-tab="export">Export</button>
+        </nav>
+        <div class="system-state"><span></span>STATIC CORE ONLINE</div>
       </header>
 
       <section class="workspace">
@@ -23,17 +31,60 @@
             <button type="button" data-panel-mode="ghost">Panel Split</button>
             <button type="button" data-panel-mode="exploded">Exploded</button>
           </div>
+          <div id="view-tools-popup" class="view-tools-popup" hidden>
+            <div class="view-popup-header">
+              <div>
+                <strong>View Tools</strong>
+                <span>DISPLAY / NAVIGATION</span>
+              </div>
+              <button id="view-tools-close" class="icon-close" type="button" aria-label="Close view tools">&times;</button>
+            </div>
+            <div class="view-popup-body">
+              <label data-tip="Changes how relief height is colored in the viewport. This does not affect exports.">Surface color
+                <select data-path="preview.colorMode">
+                  <option value="relief">Relief contrast</option>
+                  <option value="wood">Wood relief</option>
+                  <option value="mono">Solid shaded</option>
+                </select>
+              </label>
+              <label data-tip="Visual-only contrast for the relief colors. Higher values make small height changes easier to read.">Color contrast <input data-path="preview.heightContrast" type="number" step="0.1" min="0.5" max="4"></label>
+              <label data-tip="Choose whether wheel zoom stays centered on the orbit target or follows the mouse cursor like SolidWorks.">Zoom origin
+                <select data-path="preview.zoomOrigin">
+                  <option value="center">Screen center</option>
+                  <option value="cursor">Cursor position</option>
+                </select>
+              </label>
+              <div class="view-toggle-grid">
+                <label class="check" data-tip="Shows the original unwarped cabinet bounds."><input data-path="preview.showOutline" type="checkbox"> Outline</label>
+                <label class="check" data-tip="Shows a small floor origin marker plus an offset XYZ direction triad."><input data-path="preview.showAxes" type="checkbox"> XYZ origin</label>
+                <label class="check" data-tip="Shows slim CAD-style dimension lines outside the cabinet."><input data-path="preview.showDimensions" type="checkbox"> Dimensions</label>
+                <label class="check" data-tip="Shows transparent min/max relief planes for checking deviation."><input data-path="preview.showAnalysis" type="checkbox"> Analysis</label>
+                <label class="check" data-tip="Shows the Z=0 floor reference grid."><input data-path="preview.showGrid" type="checkbox"> Floor grid</label>
+                <label class="check" data-tip="Shows the rectangular panel boundary reference lines."><input data-path="preview.showSeams" type="checkbox"> Seams</label>
+                <label class="check" data-tip="Shows driver cutout/reference rings on the front face."><input data-path="preview.showDrivers" type="checkbox"> Drivers</label>
+                <label class="check" data-tip="Shows clickable wave source markers."><input data-path="preview.showSources" type="checkbox"> Sources</label>
+                <label class="check" data-tip="Shows the preview triangle wire overlay."><input data-path="preview.showPanels" type="checkbox"> Wireframe</label>
+              </div>
+              <div id="analysis-stats" class="analysis-stats"></div>
+              <button id="reset-view" class="view-reset" type="button">Reset Isometric View</button>
+            </div>
+          </div>
           <div class="hud">
-            <span>Orbit</span>
-            <span>Pan</span>
-            <span>Zoom</span>
-            <button id="reset-view" type="button">Reset View</button>
+            <button id="view-tools-toggle" type="button" aria-expanded="false">View Tools</button>
             <span id="mesh-stats">Ready</span>
           </div>
         </section>
 
         <aside class="controls">
-          <section class="panel">
+          <div class="controls-header">
+            <div>
+              <strong id="sidebar-title">Build</strong>
+              <span>PARAMETER CHANNEL</span>
+            </div>
+            <button id="close-sidebar" class="icon-close" type="button" aria-label="Close tool panel">&times;</button>
+          </div>
+
+          <section class="panel" data-sidebar-section="file">
             <h2>Project</h2>
             <label data-tip="Names the project and exported files.">Project name <input id="project-name" type="text"></label>
             <label data-tip="Converts cabinet, source, relief, and export values between inches and millimeters.">Units
@@ -51,7 +102,7 @@
             </div>
           </section>
 
-          <section class="panel">
+          <section class="panel" data-sidebar-section="build">
             <h2>Cabinet</h2>
             <div class="grid-2">
               <label data-tip="Overall cabinet width along the red X direction. The floor stays centered on X=0."><span><span class="axis-dot axis-x"></span>Width X</span><input data-path="cabinet.dimensions.width" data-dimension="x" type="number" step="0.125"></label>
@@ -62,7 +113,7 @@
             <label data-tip="Rounds the cabinet edges before waves are applied so the relief wraps more smoothly around corners.">Corner wrap <input data-path="cabinet.cornerWrap" type="range" min="0" max="1" step="0.01"></label>
           </section>
 
-          <section class="panel">
+          <section class="panel" data-sidebar-section="build">
             <h2>Wave Relief</h2>
             <div class="grid-2">
               <label data-tip="Maximum allowed wave height before wall-thickness limits are applied.">Relief depth <input data-path="waves.reliefDepth" type="number" step="0.01"></label>
@@ -90,7 +141,7 @@
             </label>
           </section>
 
-          <section class="panel">
+          <section class="panel" data-sidebar-section="sources">
             <div class="section-row">
               <h2>Drivers & Sources</h2>
               <div class="button-row">
@@ -102,29 +153,19 @@
             <div id="source-editor" class="source-editor"></div>
           </section>
 
-          <section class="panel">
-            <h2>View Tools</h2>
-            <label data-tip="Changes how relief height is colored in the viewport. This does not affect exports.">Surface color
-              <select data-path="preview.colorMode">
-                <option value="relief">Relief contrast</option>
-                <option value="wood">Wood relief</option>
-                <option value="mono">Solid shaded</option>
-              </select>
-            </label>
-            <label data-tip="Visual-only contrast for the relief colors. Higher values make small height changes easier to read.">Color contrast <input data-path="preview.heightContrast" type="number" step="0.1" min="0.5" max="4"></label>
-            <label class="check" data-tip="Shows the original unwarped cabinet bounds."><input data-path="preview.showOutline" type="checkbox"> Outline box</label>
-            <label class="check" data-tip="Shows a small floor origin marker plus an offset XYZ direction triad."><input data-path="preview.showAxes" type="checkbox"> XYZ origin</label>
-            <label class="check" data-tip="Shows slim CAD-style dimension lines outside the cabinet."><input data-path="preview.showDimensions" type="checkbox"> Dimension guides</label>
-            <label class="check" data-tip="Shows transparent min/max relief planes for checking deviation."><input data-path="preview.showAnalysis" type="checkbox"> Analysis planes</label>
-            <label class="check" data-tip="Shows the Z=0 floor reference grid."><input data-path="preview.showGrid" type="checkbox"> Floor grid</label>
-            <label class="check" data-tip="Shows the rectangular panel boundary reference lines."><input data-path="preview.showSeams" type="checkbox"> Seams</label>
-            <label class="check" data-tip="Shows driver cutout/reference rings on the front face."><input data-path="preview.showDrivers" type="checkbox"> Driver rings</label>
-            <label class="check" data-tip="Shows clickable wave source markers."><input data-path="preview.showSources" type="checkbox"> Source points</label>
-            <label class="check" data-tip="Shows the preview triangle wire overlay. Useful for mesh density checks, visually noisy for design work."><input data-path="preview.showPanels" type="checkbox"> Surface wire</label>
-            <div id="analysis-stats" class="analysis-stats"></div>
+          <section class="panel" data-sidebar-section="panels">
+            <div class="section-row">
+              <h2>Panel Visibility</h2>
+              <div class="button-row compact">
+                <button id="show-all-panels" type="button">All</button>
+                <button id="hide-all-panels" type="button">None</button>
+              </div>
+            </div>
+            <p class="status-text">Controls which parts appear in Panel Split and Exploded modes. Click a visible exploded panel for its DFM properties.</p>
+            <div id="dfm-visibility-list" class="dfm-visibility-list"></div>
           </section>
 
-          <section class="panel">
+          <section class="panel" data-sidebar-section="export">
             <h2>DFM Panels</h2>
             <div class="grid-2">
               <label data-tip="Radius distance used to roll owned panel edges downward for router-friendly roundovers.">Route radius <input data-path="panelization.dfm.edgeRadius" type="number" min="0" step="0.0625"></label>
@@ -132,7 +173,7 @@
             </div>
           </section>
 
-          <section class="panel">
+          <section class="panel" data-sidebar-section="export">
             <h2>Output</h2>
             <label data-tip="Controls mesh density for OBJ/STL and source sampling for browser STEP. Higher quality improves detail and can slow SolidWorks imports.">Export quality
               <select data-path="export.resolution">

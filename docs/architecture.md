@@ -61,6 +61,14 @@ Sources are edited through compact selectable chips plus one focused editor. Cli
 
 In exploded mode, source markers are hidden and clicking a panel opens its blank dimensions, thickness, routed/square edge ownership, and export inclusion.
 
+## Interface Shell
+
+The top application bar selects one right-dock context at a time: File, Build, Driver Source Config, Panels, or Export. Closing the dock removes its grid column and a `ResizeObserver` keeps the WebGL canvas matched to the expanding viewport.
+
+Display-only controls live in a separate bottom-left View Tools drawer. This keeps overlays and camera behavior available while the parameter dock is closed. Wheel zoom can use the orbit target as its center or intersect the pointer ray with the target plane for cursor-anchored navigation.
+
+Panel visibility is separate from panel export selection. It affects only Panel Split and Exploded preview modes and is stored in the project preview state.
+
 Preview mesh resolution and output mesh quality are separate. The preview can stay responsive while OBJ, STL, browser STEP, and DFM panel exports rebuild from denser geometry.
 
 ## Stability Boundary

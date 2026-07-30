@@ -35,6 +35,12 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added DFM panel inclusion controls and separate labeled STEP/OBJ/STL files for the selected faces.
 - Changed flat DFM STEP boundaries to explicit analytic `PLANE` surfaces so SolidWorks can recognize them as planar faces.
 - Grouped Save/Load under Project and consolidated all assembled and panel outputs in the Output section.
+- Reorganized the right controls into contextual File, Build, Driver Source Config, Panels, and Export tool tabs, with a close control that returns the full width to the viewport.
+- Changed the UI to a compact console/computer-science visual system using local monospace fonts and restrained phosphor, amber, cyan, and CAD axis colors.
+- Moved view overlays, analysis readouts, and reset view into a bottom-left popup that remains available when the right tool dock is closed.
+- Added center and cursor wheel-zoom anchors. Cursor mode zooms around the point under the pointer on the orbit-target plane.
+- Added independent six-panel visibility state and contextual sidebar switching when sources or exploded panels are selected.
+- Added a viewer `ResizeObserver` so Three.js follows the animated sidebar width without stale framing or a blank canvas.
 - Added a Docker-only CadQuery/OCP solid STEP exporter for the first outer-block SolidWorks import path.
 - Added an example `default-speaker.wavecad.json` project.
 - Added a browser smoke test page.
@@ -66,5 +72,6 @@ This file tracks the practical work being done in the repo so the project has a 
 
 - Static smoke test page was added for browser-side checks.
 - Browser checks cover model/panel-split/exploded mode switching, panel selection overlays, export selection, and console errors.
+- Browser checks cover tool-tab switching, full-width dock collapse/reopen, contextual source/panel tabs, panel visibility, view drawer layout, and both wheel-zoom origins.
 - DFM STEP checks confirm six panel solids, five analytic planes per panel, flat undersides, and one solid in each individual panel file.
 - Old npm/Electron/Python checks are intentionally removed from the active prototype path.

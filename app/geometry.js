@@ -91,6 +91,8 @@
       showAnalysis: false,
       showGrid: true,
       panelMode: "model",
+      visiblePanels: DFM_PANEL_ORDER.slice(),
+      zoomOrigin: "center",
       colorMode: "relief",
       heightContrast: 2.35
     },
