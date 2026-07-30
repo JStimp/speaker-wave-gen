@@ -33,7 +33,9 @@ The prototype supports a rectangular enclosure. Coordinates follow a CAD-style f
 
 The wave field is evaluated on the full cuboid shell before any panel thinking, so shared edges use the same relief height.
 
-DFM panel export derives six flat-workholding panel solids from that same field. The first fixed split gives each panel no more than two routed/radiused edges and keeps the remaining edges square for mating.
+DFM panel export derives six flat-workholding panel solids from that same field. The fixed split gives each panel no more than two routed/radiused edges and keeps the remaining edges square for mating. Every cabinet edge has exactly one owner: the routed owner keeps the full outside extent, while the non-owner is shortened by one wall thickness so its square end meets the owner's inner face without occupying the same corner volume.
+
+Shortened panels retain their original assembled-face UV range. The wave field is cropped at the joint instead of being rescaled across the smaller blank, preserving alignment with the shared cabinet design.
 
 The viewer can transform those same panel meshes back into cabinet coordinates for a transparent ownership overlay or move them outward along their face normals for an exploded assembly view. Panel meshes carry face IDs for viewport picking and the focused DFM properties overlay.
 
@@ -59,7 +61,7 @@ Analysis planes show the current min/max relief offsets around the cabinet, whil
 
 Sources are edited through compact selectable chips plus one focused editor. Clicking a source marker in the preview also selects that source, so source changes do not require scrolling through every driver.
 
-In exploded mode, source markers are hidden and clicking a panel opens its blank dimensions, thickness, routed/square edge ownership, and export inclusion.
+In exploded mode, source markers are hidden and clicking a panel opens its machined dimensions, thickness, routed/square edge ownership, flush-joint rule, and export inclusion.
 
 ## Interface Shell
 

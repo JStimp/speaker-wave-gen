@@ -12,6 +12,20 @@
     bottom: ["bottom", "top"]
   };
   const LOCAL_PANEL_EDGES = ["left", "right", "top", "bottom"];
+  const DFM_JOINTS = [
+    { id: "front-left", a: ["front", "left"], b: ["left", "left"] },
+    { id: "front-right", a: ["front", "right"], b: ["right", "left"] },
+    { id: "back-right", a: ["back", "left"], b: ["right", "right"] },
+    { id: "back-left", a: ["back", "right"], b: ["left", "right"] },
+    { id: "front-top", a: ["front", "top"], b: ["top", "bottom"] },
+    { id: "right-top", a: ["right", "top"], b: ["top", "right"] },
+    { id: "back-top", a: ["back", "top"], b: ["top", "top"] },
+    { id: "left-top", a: ["left", "top"], b: ["top", "left"] },
+    { id: "front-bottom", a: ["front", "bottom"], b: ["bottom", "bottom"] },
+    { id: "right-bottom", a: ["right", "bottom"], b: ["bottom", "right"] },
+    { id: "back-bottom", a: ["back", "bottom"], b: ["bottom", "top"] },
+    { id: "left-bottom", a: ["left", "bottom"], b: ["bottom", "left"] }
+  ];
   const RESOLUTION_PRESETS = {
     draft: 10,
     low: 20,
@@ -103,6 +117,7 @@
       dfm: {
         enabled: true,
         edgeOwnership: "balancedTwoEdge",
+        jointStrategy: "flushButt",
         maxCurvedEdgesPerPanel: 2,
         edgeRadius: 0.75,
         layoutGap: 4,
@@ -427,16 +442,27 @@
     const dims = dimensions(normalized);
     const dfm = dfmSettings(normalized);
     const edgeRadius = Math.max(0, Number(dfm.edgeRadius) || 0);
+    const thickness = Math.max(0.001, Number(dims.wallThickness) || 0.75);
 
     const panels = DFM_PANEL_ORDER.map((face) => {
       const ownedEdges = ownedEdgesForPanel(normalized, face);
       const flatEdges = LOCAL_PANEL_EDGES.filter((edge) => ownedEdges.indexOf(edge) === -1);
       const size = faceSize(face, dims);
+      const insets = panelJointInsets(flatEdges, thickness);
+      const width = Math.max(0.001, size.width - insets.left - insets.right);
+      const height = Math.max(0.001, size.height - insets.bottom - insets.top);
       return {
         face,
         label: panelLabel(face),
-        width: size.width,
-        height: size.height,
+        width,
+        height,
+        faceWidth: size.width,
+        faceHeight: size.height,
+        insets,
+        assemblyOffset: {
+          x: (insets.left - insets.right) / 2,
+          y: (insets.bottom - insets.top) / 2
+        },
         ownedEdges,
         flatEdges,
         ownedEdgeLabels: panelEdgeLabels(face, ownedEdges),
@@ -449,12 +475,65 @@
 
     return {
       edgeRadius,
+      thickness,
+      jointStrategy: "flushButt",
       layoutGap: Math.max(0, Number(dfm.layoutGap) || 0),
       maxCurvedEdgesPerPanel: Number(dfm.maxCurvedEdgesPerPanel) || 2,
       panels,
       warnings: panels
         .filter((panel) => !panel.valid)
         .map((panel) => panel.label + " owns " + panel.curvedEdgeCount + " curved edges.")
+    };
+  }
+
+  function panelJointInsets(flatEdges, thickness) {
+    const insets = { left: 0, right: 0, top: 0, bottom: 0 };
+    flatEdges.forEach((edge) => {
+      insets[edge] = thickness;
+    });
+    return insets;
+  }
+
+  function dfmJointReport(project) {
+    const plan = dfmPanelPlan(project);
+    const panels = {};
+    plan.panels.forEach((panel) => {
+      panels[panel.face] = panel;
+    });
+
+    const joints = DFM_JOINTS.map((joint) => {
+      const panelA = panels[joint.a[0]];
+      const panelB = panels[joint.b[0]];
+      const edgeA = joint.a[1];
+      const edgeB = joint.b[1];
+      const ownsA = panelA.ownedEdges.indexOf(edgeA) !== -1;
+      const ownsB = panelB.ownedEdges.indexOf(edgeB) !== -1;
+      const validOwnership = ownsA !== ownsB;
+      const ownerInset = ownsA ? panelA.insets[edgeA] : panelB.insets[edgeB];
+      const matingInset = ownsA ? panelB.insets[edgeB] : panelA.insets[edgeA];
+      const overlapDepth = validOwnership ? Math.max(0, plan.thickness - matingInset) : plan.thickness;
+      const planeError = validOwnership
+        ? Math.abs(ownerInset) + Math.abs(matingInset - plan.thickness)
+        : plan.thickness;
+      return {
+        id: joint.id,
+        owner: validOwnership ? (ownsA ? panelA.face : panelB.face) : "",
+        matingPanel: validOwnership ? (ownsA ? panelB.face : panelA.face) : "",
+        validOwnership,
+        overlapDepth,
+        planeError
+      };
+    });
+
+    const maxOverlap = Math.max.apply(null, joints.map((joint) => joint.overlapDepth));
+    const maxPlaneError = Math.max.apply(null, joints.map((joint) => joint.planeError));
+    return {
+      valid: joints.every((joint) => joint.validOwnership) && maxOverlap < 1e-9 && maxPlaneError < 1e-9,
+      jointCount: joints.length,
+      overlapCount: joints.filter((joint) => joint.overlapDepth >= 1e-9).length,
+      maxOverlap,
+      maxPlaneError,
+      joints
     };
   }
 
@@ -495,6 +574,7 @@
       layoutGap,
       panels,
       plan: panelPlan,
+      jointReport: dfmJointReport(normalized),
       summary: {
         panelCount: panels.length,
         vertexCount,
@@ -525,7 +605,8 @@
       for (let column = 0; column <= columns; column += 1) {
         const u = column / columns;
         const local = panelLocalPoint(panel, u, v);
-        const point = pointOnFace(panel.face, u, v, dims, project);
+        const faceUv = panelFaceUv(panel, u, v);
+        const point = pointOnFace(panel.face, faceUv.u, faceUv.v, dims, project);
         const wave = computeWaveDisplacement(point, project);
         const drop = dfmEdgeDrop(u, v, panel.width, panel.height, panel.ownedEdges, edgeRadius, edgeDrop);
         const topZ = Math.max(0.001, thickness + wave.displacement - drop);
@@ -569,6 +650,11 @@
       label: panel.label,
       width: panel.width,
       height: panel.height,
+      faceWidth: panel.faceWidth,
+      faceHeight: panel.faceHeight,
+      insets: Object.assign({}, panel.insets),
+      assemblyOffset: Object.assign({}, panel.assemblyOffset),
+      jointStrategy: "flushButt",
       thickness,
       edgeRadius,
       ownedEdges: panel.ownedEdges.slice(),
@@ -609,6 +695,13 @@
     };
   }
 
+  function panelFaceUv(panel, u, v) {
+    return {
+      u: (panel.insets.left + u * panel.width) / panel.faceWidth,
+      v: (panel.insets.bottom + v * panel.height) / panel.faceHeight
+    };
+  }
+
   function dfmEdgeDrop(u, v, width, height, ownedEdges, edgeRadius, edgeDrop) {
     if (edgeRadius <= 0 || edgeDrop <= 0 || !ownedEdges.length) return 0;
     const distances = [];
@@ -642,7 +735,17 @@
   }
 
   function physicalPanelEdgeLabel(face, edge) {
+    if (face === "back") {
+      if (edge === "left") return "right";
+      if (edge === "right") return "left";
+    }
+    if (face === "left" || face === "right") {
+      if (edge === "left") return "front";
+      if (edge === "right") return "back";
+    }
     if (face === "top" || face === "bottom") {
+      if (edge === "left") return "left";
+      if (edge === "right") return "right";
       if (edge === "bottom") return "front";
       if (edge === "top") return "back";
     }
@@ -770,11 +873,13 @@
   window.WaveGeometry = {
     FACE_NAMES,
     DFM_PANEL_ORDER,
+    DFM_JOINTS,
     RESOLUTION_PRESETS,
     DEFAULT_PROJECT,
     createDefaultProject,
     normalizeProject,
     dfmPanelPlan,
+    dfmJointReport,
     pointOnFace,
     collectSources,
     surfaceDistanceToSource,

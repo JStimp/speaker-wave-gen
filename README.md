@@ -39,6 +39,7 @@ You can also open `app/index.html` directly in a browser.
 - Orbit/pan/zoom 3D viewport using vendored Three.js files.
 - Browser downloads for `.wavecad.json`, `.obj`, `.stl`, Smooth surface STEP, and preview `.png`.
 - Selectable DFM exports that create separately named STEP/OBJ/STL files for the chosen panels. Chromium browsers can write them into an automatically named project folder.
+- Flush DFM butt joints: each cabinet edge has one full-extent routed owner, while the square mating panel is shortened by exactly one wall thickness to prevent corner-volume interference.
 - DFM STEP uses analytic planar faces for the flat underside and panel boundaries, with a spline surface only for the sculpted wave face.
 - OBJ/STL/browser STEP exports use a separate output quality setting, so they can be higher resolution or smoother than the live preview.
 - Higher default preview/detail settings for inspecting wave relief without immediately changing controls.
@@ -71,7 +72,7 @@ Open:
 app/smoke-test.html
 ```
 
-It checks that the default project loads, mesh vertices are finite, rounded front/right seam heights match, flat-bottom floor relief behaves correctly, DFM panel bottoms stay flat, individual panel STEP files contain one solid, planar boundaries use STEP planes, and OBJ/STL/STEP exporters produce text.
+It checks that the default project loads, mesh vertices are finite, rounded front/right seam heights match, flat-bottom floor relief behaves correctly, all twelve DFM joints have one owner with zero modeled overlap, panel bottoms stay flat, individual panel STEP files contain one solid, planar boundaries use STEP planes, and OBJ/STL/STEP exporters produce text.
 
 ## STEP Direction
 

@@ -24,6 +24,8 @@
 - Added a Docker-only CadQuery/OCP solid STEP exporter with a drag/drop Windows launcher for SolidWorks outer-block solids.
 - Kept the Docker solid exporter compatible with normal saved `.wavecad.json` projects without a redundant browser output button.
 - Added DFM panel exports for six flat-workholding panel solids, including Smooth STEP plus OBJ/STL debug downloads.
+- Removed DFM corner interference with flush butt-joint sizing: routed edge owners keep the full extent while square mating panels are shortened by one wall thickness.
+- Added twelve-joint ownership, overlap, and mating-plane geometry checks.
 - Added assembled, transparent panel-split, and exploded panel preview modes with clickable panel property overlays.
 - Added per-panel export selection and separate labeled STEP/OBJ/STL files written into a project output folder when the browser supports directory access.
 - Changed DFM STEP flat undersides and boundary faces to analytic STEP planes for stronger SolidWorks face recognition.

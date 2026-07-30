@@ -171,6 +171,7 @@
               <label data-tip="Radius distance used to roll owned panel edges downward for router-friendly roundovers.">Route radius <input data-path="panelization.dfm.edgeRadius" type="number" min="0" step="0.0625"></label>
               <label data-tip="Spacing between separated panel parts in the exported OBJ/STL layout.">Layout gap <input data-path="panelization.dfm.layoutGap" type="number" min="0" step="0.25"></label>
             </div>
+            <p class="status-text">Flush butt joints: every routed edge keeps the full cabinet extent; its square mating panel is shortened by one wall thickness so the solids meet without intersecting.</p>
           </section>
 
           <section class="panel" data-sidebar-section="export">

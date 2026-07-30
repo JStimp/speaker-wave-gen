@@ -680,6 +680,26 @@ button:focus,
   margin-top: 7px;
 }
 
+.panel-joint-note {
+  display: grid;
+  gap: 4px;
+  border-left: 2px solid var(--panel-color);
+  padding: 8px 10px;
+  background: rgba(115, 231, 162, 0.06);
+}
+
+.panel-joint-note strong {
+  color: #d8f7e4;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.panel-joint-note span {
+  color: #91a99b;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
 .source-overlay[hidden] {
   display: none;
 }

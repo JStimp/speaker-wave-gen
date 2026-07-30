@@ -71,8 +71,14 @@
         check("OBJ exporter returns text", WaveExporters.meshToObj(exportMesh, "test").length > 100);
         check("STL exporter returns text", WaveExporters.meshToStl(exportMesh, "test").length > 100);
         const panelSet = WaveGeometry.generateDfmPanelMeshes(project, { resolution: "draft" });
+        const panelPlan = WaveGeometry.dfmPanelPlan(project);
+        const jointReport = WaveGeometry.dfmJointReport(project);
         const maxCurvedEdges = Math.max.apply(null, panelSet.panels.map((panel) => panel.ownedEdges.length));
         const panelBottomsFlat = panelSet.panels.every((panel) => panel.bottomGrid.every((row) => row.every((point) => Math.abs(point.z) < 1e-12)));
+        const frontPanel = panelPlan.panels.find((panel) => panel.face === "front");
+        const rightPanel = panelPlan.panels.find((panel) => panel.face === "right");
+        const topPanel = panelPlan.panels.find((panel) => panel.face === "top");
+        const wallThickness = project.cabinet.dimensions.wallThickness;
         const dfmStep = WaveExporters.panelSetToStep(panelSet, project, "test");
         const dfmBodyCount = (dfmStep.match(/MANIFOLD_SOLID_BREP/g) || []).length;
         const dfmPlaneCount = (dfmStep.match(/PLANE\('/g) || []).length;
@@ -83,6 +89,12 @@
         const frontBodyCount = (frontStep.match(/MANIFOLD_SOLID_BREP/g) || []).length;
         check("DFM panel export creates six panels", panelSet.panels.length === 6);
         check("DFM panels keep two or fewer curved edges each", maxCurvedEdges <= 2);
+        check("DFM front blank is trimmed only at square top/bottom edges", Math.abs(frontPanel.width - project.cabinet.dimensions.width) < 1e-12 && Math.abs(frontPanel.height - (project.cabinet.dimensions.height - 2 * wallThickness)) < 1e-12);
+        check("DFM side blank is trimmed only at square front/back edges", Math.abs(rightPanel.width - (project.cabinet.dimensions.depth - 2 * wallThickness)) < 1e-12 && Math.abs(rightPanel.height - project.cabinet.dimensions.height) < 1e-12);
+        check("DFM top blank is trimmed only at square left/right edges", Math.abs(topPanel.width - (project.cabinet.dimensions.width - 2 * wallThickness)) < 1e-12 && Math.abs(topPanel.height - project.cabinet.dimensions.depth) < 1e-12);
+        check("all twelve DFM joints have exactly one edge owner", jointReport.jointCount === 12 && jointReport.joints.every((joint) => joint.validOwnership));
+        check("DFM panel solids have zero corner-volume overlap", jointReport.overlapCount === 0 && jointReport.maxOverlap < 1e-12);
+        check("DFM square mating planes match owner inner faces", jointReport.valid && jointReport.maxPlaneError < 1e-12);
         check("DFM panel undersides stay flat", panelBottomsFlat);
         check("DFM OBJ exporter returns panel text", WaveExporters.panelSetToObj(panelSet, "test").includes("routed_curved_edges"));
         check("DFM STL exporter returns panel solids", WaveExporters.panelSetToStl(panelSet, "test").includes("front_panel"));

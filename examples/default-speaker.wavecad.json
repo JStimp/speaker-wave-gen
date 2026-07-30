@@ -87,6 +87,7 @@
     "dfm": {
       "enabled": true,
       "edgeOwnership": "balancedTwoEdge",
+      "jointStrategy": "flushButt",
       "maxCurvedEdgesPerPanel": 2,
       "edgeRadius": 0.75,
       "layoutGap": 4,

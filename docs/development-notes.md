@@ -31,6 +31,8 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added corner wrap geometry for smoother wrapped edges while preserving a flat underside contact patch.
 - Added browser JSON, OBJ, STL, Smooth surface STEP, faceted fallback STEP, and PNG exports.
 - Added first-pass DFM panel exports: six flat-workholding panel solids with no more than two routed curved edges per panel, plus Smooth STEP, OBJ, and STL downloads.
+- Changed DFM blank sizing from six full-face overlapping slabs to flush butt-joint solids. Each square non-owning edge is inset by one wall thickness, while routed owners retain the full outside extent.
+- Added a twelve-edge DFM joint report that verifies one owner per cabinet edge, zero modeled corner overlap, and matching mating planes.
 - Added transparent panel-split and exploded panel visualization modes. Exploded panels are selectable and open a focused DFM properties overlay while source markers stay hidden.
 - Added DFM panel inclusion controls and separate labeled STEP/OBJ/STL files for the selected faces.
 - Changed flat DFM STEP boundaries to explicit analytic `PLANE` surfaces so SolidWorks can recognize them as planar faces.
@@ -65,7 +67,7 @@ This file tracks the practical work being done in the repo so the project has a 
 - OBJ/STL are mesh exports, not editable CAD surfaces.
 - Browser STEP defaults to the Smooth surface BREP path. Smooth reliable solid STEP remains the overall export goal; the Docker exporter is the separate CAD-kernel path toward stronger validation.
 - DFM panel STEP is a browser-generated BREP prototype with one spline top and five analytic planar faces per panel, not a fully validated CAD-kernel sew.
-- DFM panel outputs do not include rabbets, screw holes, driver cutouts, internal clearances, or final joinery yet.
+- DFM panel outputs use zero-clearance butt joints and do not yet include rabbets, screw holes, driver cutouts, glue gaps, machining tolerances, or internal clearances.
 - The Docker exporter currently targets one outer solid block; hollow shells, cutouts, and CAD-kernel separated panels remain future work.
 
 ## Verification Run By Codex
@@ -73,5 +75,5 @@ This file tracks the practical work being done in the repo so the project has a 
 - Static smoke test page was added for browser-side checks.
 - Browser checks cover model/panel-split/exploded mode switching, panel selection overlays, export selection, and console errors.
 - Browser checks cover tool-tab switching, full-width dock collapse/reopen, contextual source/panel tabs, panel visibility, view drawer layout, and both wheel-zoom origins.
-- DFM STEP checks confirm six panel solids, five analytic planes per panel, flat undersides, and one solid in each individual panel file.
+- DFM checks confirm six panel solids, one owner on each of twelve cabinet edges, zero corner-volume overlap, matched mating planes, five analytic planes per panel, flat undersides, and one solid in each individual panel file.
 - Old npm/Electron/Python checks are intentionally removed from the active prototype path.

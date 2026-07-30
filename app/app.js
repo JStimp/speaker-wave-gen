@@ -611,11 +611,12 @@
       "</div>",
       '<label class="check panel-export-check"><input type="checkbox" data-overlay-panel-export="' + panel.face + '" ' + (selected ? "checked" : "") + '> Include in DFM export</label>',
       '<div class="panel-property-grid">',
-      panelProperty("Blank width", fmtDimension(panel.width)),
-      panelProperty("Blank height", fmtDimension(panel.height)),
+      panelProperty("Machined width", fmtDimension(panel.width)),
+      panelProperty("Machined height", fmtDimension(panel.height)),
       panelProperty("Thickness", fmtDimension(project.cabinet.dimensions.wallThickness)),
       panelProperty("Route radius", fmtDimension(panel.edgeRadius)),
       "</div>",
+      '<div class="panel-joint-note"><strong>Flush butt joints</strong><span>Square edges are shortened by one wall thickness to meet the neighboring panel without overlap.</span></div>',
       '<div class="panel-edge-groups">',
       '<div><strong>Routed / radiused</strong><span>' + escapeHtml(panel.ownedEdgeLabels.join(", ")) + '</span></div>',
       '<div><strong>Square mating edges</strong><span>' + escapeHtml(panel.flatEdgeLabels.join(", ")) + '</span></div>',
@@ -1353,8 +1354,8 @@
       const positions = [];
       for (let i = 0; i < panel.vertices.length; i += 3) {
         const local = {
-          x: panel.vertices[i] - panel.origin.x,
-          y: panel.vertices[i + 1] - panel.origin.y,
+          x: panel.vertices[i] - panel.origin.x + panel.assemblyOffset.x,
+          y: panel.vertices[i + 1] - panel.origin.y + panel.assemblyOffset.y,
           z: panel.vertices[i + 2] - panel.origin.z
         };
         const point = assembledPanelPoint(panel.face, local, dims, panel.thickness, separation);
