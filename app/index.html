@@ -13,23 +13,16 @@
           <strong>WaveGen3D</strong>
           <span>Static speaker wave CAD prototype</span>
         </div>
-        <div class="actions">
-          <label class="file-button" data-tip="Load a saved WaveGen3D project JSON into the current editor.">
-            Load JSON
-            <input id="load-project" type="file" accept=".json,.wavecad.json">
-          </label>
-          <button id="export-step" class="primary" type="button" data-tip="Download the current cabinet as a Smooth surface STEP by default. Use the faceted fallback only if a CAD import needs it.">Export STEP</button>
-          <button id="save-json" type="button" data-tip="Save the editable WaveGen3D project file.">Save Project</button>
-          <button id="export-obj" class="secondary" type="button" data-tip="Download a mesh OBJ for reference or non-CAD workflows.">OBJ</button>
-          <button id="export-stl" class="secondary" type="button" data-tip="Download a mesh STL for quick checks or slicer-style tools.">STL</button>
-          <button id="save-png" class="secondary" type="button" data-tip="Save the current viewport as a PNG screenshot.">PNG</button>
-          <button id="prepare-solid-step" class="secondary" type="button" data-tip="Save JSON for the separate Docker CAD-kernel exporter experiment.">Docker JSON</button>
-        </div>
       </header>
 
       <section class="workspace">
         <section class="viewer-wrap">
           <div id="viewer"></div>
+          <div class="viewer-toolbar" role="group" aria-label="Panel visualization">
+            <button type="button" data-panel-mode="model">Model</button>
+            <button type="button" data-panel-mode="ghost">Panel Split</button>
+            <button type="button" data-panel-mode="exploded">Exploded</button>
+          </div>
           <div class="hud">
             <span>Orbit</span>
             <span>Pan</span>
@@ -49,6 +42,13 @@
                 <option value="mm">Millimeters</option>
               </select>
             </label>
+            <div class="project-file-actions">
+              <label class="file-button" data-tip="Load a saved WaveGen3D project JSON into the current editor.">
+                Load JSON
+                <input id="load-project" type="file" accept=".json,.wavecad.json">
+              </label>
+              <button id="save-json" type="button" data-tip="Save the editable WaveGen3D project file.">Save Project</button>
+            </div>
           </section>
 
           <section class="panel">
@@ -126,12 +126,10 @@
 
           <section class="panel">
             <h2>DFM Panels</h2>
-            <p class="status-text">Panel exports split the cabinet into six flat workholding solids. Each panel owns up to two routed curved edges; the other edges stay square for mating.</p>
             <div class="grid-2">
               <label data-tip="Radius distance used to roll owned panel edges downward for router-friendly roundovers.">Route radius <input data-path="panelization.dfm.edgeRadius" type="number" min="0" step="0.0625"></label>
               <label data-tip="Spacing between separated panel parts in the exported OBJ/STL layout.">Layout gap <input data-path="panelization.dfm.layoutGap" type="number" min="0" step="0.25"></label>
             </div>
-            <div id="dfm-panel-summary" class="dfm-panel-summary"></div>
           </section>
 
           <section class="panel">
@@ -146,17 +144,33 @@
                 <option value="production">Production</option>
               </select>
             </label>
-            <label data-tip="Smooth surface STEP is the production-direction output with spline faces and fewer CAD entities. Faceted solid fallback is useful when you need SolidWorks to force a solid body.">STEP type
+            <label data-tip="Controls only the assembled reference STEP. DFM panel STEP always uses a smooth top plus analytic planar boundaries.">Assembly STEP type
               <select data-path="export.stepMode">
                 <option value="smoothSurfaceStep">Smooth surface STEP</option>
                 <option value="facetedSolidStep">Faceted solid fallback</option>
               </select>
             </label>
             <label data-tip="Controls Smooth surface STEP quality. Higher values fit each cabinet face with more spline control points; this can improve fidelity but may reduce import reliability.">Spline controls <input data-path="export.surfaceControlLimit" type="number" min="10" max="64" step="1"></label>
+            <h3>Assembly / reference</h3>
+            <div class="export-row assembly-exports">
+              <button id="export-step" class="primary" type="button" data-tip="Download the assembled cabinet as a smooth surface STEP by default.">STEP</button>
+              <button id="export-obj" class="secondary" type="button" data-tip="Download the assembled preview mesh as OBJ.">OBJ</button>
+              <button id="export-stl" class="secondary" type="button" data-tip="Download the assembled preview mesh as STL.">STL</button>
+              <button id="save-png" class="secondary" type="button" data-tip="Save the current viewport as a PNG screenshot.">PNG</button>
+            </div>
+            <div class="output-divider"></div>
+            <div class="section-row output-subhead">
+              <h3>DFM panel files</h3>
+              <div class="button-row compact">
+                <button id="select-all-panels" type="button">All</button>
+                <button id="select-no-panels" type="button">None</button>
+              </div>
+            </div>
+            <div id="dfm-export-selection" class="dfm-export-selection"></div>
             <div class="export-row">
-              <button id="export-dfm-step" class="primary" type="button" data-tip="Export six named smooth STEP panel solids for CNC/CAM planning. This is the DFM manufacturing output path.">DFM Panel STEP</button>
-              <button id="export-dfm-obj" class="secondary" type="button" data-tip="Export six DFM panel solids in one OBJ file, laid out flat for CNC planning.">DFM Panels OBJ</button>
-              <button id="export-dfm-stl" class="secondary" type="button" data-tip="Export six DFM panel solids in one STL file, laid out flat for CNC planning.">DFM Panels STL</button>
+              <button id="export-dfm-step" class="primary" type="button" data-tip="Choose a folder and write each selected panel as a separately named STEP solid. Flat boundaries use analytic STEP planes for CAD face recognition.">Selected STEP</button>
+              <button id="export-dfm-obj" class="secondary" type="button" data-tip="Write each selected panel as a separately named OBJ reference mesh.">Selected OBJ</button>
+              <button id="export-dfm-stl" class="secondary" type="button" data-tip="Write each selected panel as a separately named STL reference mesh.">Selected STL</button>
             </div>
             <p id="export-status" class="status-text">Exports use the selected output quality, independent of preview resolution.</p>
           </section>

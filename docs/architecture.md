@@ -18,8 +18,8 @@ WaveGen3D is a static browser prototype. The first priority is a stable app that
 User edits controls
   -> project object updates in memory
   -> geometry mesh rebuilds in the browser
-  -> Three.js preview redraws
-  -> user downloads JSON, OBJ, STL, assembled browser STEP, DFM panel STEP, or PNG
+  -> Three.js preview redraws as assembled, panel-split, or exploded geometry
+  -> user downloads JSON, OBJ, STL, assembled browser STEP, selected per-panel files, or PNG
   -> optional saved JSON goes through Docker solid STEP exporter
 ```
 
@@ -34,6 +34,10 @@ The prototype supports a rectangular enclosure. Coordinates follow a CAD-style f
 The wave field is evaluated on the full cuboid shell before any panel thinking, so shared edges use the same relief height.
 
 DFM panel export derives six flat-workholding panel solids from that same field. The first fixed split gives each panel no more than two routed/radiused edges and keeps the remaining edges square for mating.
+
+The viewer can transform those same panel meshes back into cabinet coordinates for a transparent ownership overlay or move them outward along their face normals for an exploded assembly view. Panel meshes carry face IDs for viewport picking and the focused DFM properties overlay.
+
+Each separately exported panel STEP contains one sculpted spline top and five analytic planar faces. Export selection is stored in the project schema so chosen manufacturing parts survive save/load.
 
 Front-mounted sources use a cuboid-unfolding distance model on sharp cabinets. When corner wrap is enabled, the wave field switches to the rounded 3D surface positions at wrapped edges so adjacent faces keep matched relief.
 
@@ -54,6 +58,8 @@ The viewer can draw an original-size outline box, a small floor origin marker, a
 Analysis planes show the current min/max relief offsets around the cabinet, while the View Tools panel reports total deviation, max outward, max inward, and max absolute relief in the active units.
 
 Sources are edited through compact selectable chips plus one focused editor. Clicking a source marker in the preview also selects that source, so source changes do not require scrolling through every driver.
+
+In exploded mode, source markers are hidden and clicking a panel opens its blank dimensions, thickness, routed/square edge ownership, and export inclusion.
 
 Preview mesh resolution and output mesh quality are separate. The preview can stay responsive while OBJ, STL, browser STEP, and DFM panel exports rebuild from denser geometry.
 

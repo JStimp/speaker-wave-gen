@@ -53,6 +53,8 @@
         check("default units are inches", project.units === "in");
         check("default project loads", project.project.name.length > 0);
         check("default browser STEP mode is smooth surface", project.export.stepMode === "smoothSurfaceStep");
+        check("default panel visualization is assembled model", project.preview.panelMode === "model");
+        check("all DFM panels are selected by default", project.panelization.dfm.exportPanels.length === 6);
         check("mesh has finite vertices", mesh.vertices.length > 0 && mesh.vertices.every(Number.isFinite));
         check("mesh summary includes relief deviation", mesh.summary.deviation > 0 && mesh.summary.maxAbsHeight > 0);
         check("default export mesh is production-preview dense", exportMesh.summary.triangleCount > mesh.summary.triangleCount);
@@ -71,12 +73,20 @@
         const panelBottomsFlat = panelSet.panels.every((panel) => panel.bottomGrid.every((row) => row.every((point) => Math.abs(point.z) < 1e-12)));
         const dfmStep = WaveExporters.panelSetToStep(panelSet, project, "test");
         const dfmBodyCount = (dfmStep.match(/MANIFOLD_SOLID_BREP/g) || []).length;
+        const dfmPlaneCount = (dfmStep.match(/PLANE\('/g) || []).length;
+        const frontStep = WaveExporters.panelSetToStep({
+          units: panelSet.units,
+          panels: [panelSet.panels[0]]
+        }, project, "test-front");
+        const frontBodyCount = (frontStep.match(/MANIFOLD_SOLID_BREP/g) || []).length;
         check("DFM panel export creates six panels", panelSet.panels.length === 6);
         check("DFM panels keep two or fewer curved edges each", maxCurvedEdges <= 2);
         check("DFM panel undersides stay flat", panelBottomsFlat);
         check("DFM OBJ exporter returns panel text", WaveExporters.panelSetToObj(panelSet, "test").includes("routed_curved_edges"));
         check("DFM STL exporter returns panel solids", WaveExporters.panelSetToStl(panelSet, "test").includes("front_panel"));
         check("DFM STEP exporter returns six smooth panel solids", dfmBodyCount === 6 && dfmStep.includes("B_SPLINE_SURFACE_WITH_KNOTS"));
+        check("DFM STEP flats are analytic planes", dfmPlaneCount === 30);
+        check("individual DFM STEP contains one named solid", frontBodyCount === 1 && frontStep.includes("Front panel DFM solid"));
         const step = WaveExporters.meshToStep(mesh, project, "test");
         check("STEP exporter returns smooth solid BREP text", step.includes("MANIFOLD_SOLID_BREP") && step.includes("CLOSED_SHELL") && step.includes("B_SPLINE_SURFACE_WITH_KNOTS"));
 

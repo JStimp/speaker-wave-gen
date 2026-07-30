@@ -8,8 +8,7 @@ The static app exports:
 - `.obj`
 - `.stl`
 - Smooth surface browser `.step`
-- DFM panel Smooth surface browser `.step`
-- DFM panel `.obj` and `.stl`
+- Selected DFM panels as separately named browser `.step`, `.obj`, and `.stl` files
 - Solid STEP project `.wavecad.json`
 - `.png` preview screenshot
 
@@ -24,12 +23,14 @@ The browser app includes two in-house STEP modes:
 - Smooth surface STEP: the default hand-written BREP built from spline surface faces for lower-entity SolidWorks tests.
 - Faceted solid fallback: a triangular BREP retained for troubleshooting import problems.
 
-For the separate CAD-kernel path, click `Docker JSON` in the browser, then drag the downloaded `.solid-step.wavecad.json` onto `Export-Solid-Step.bat`. That Docker path runs OpenCascade-based sewing and validation and writes `exports/outer-solid.step` plus `exports/outer-solid.report.json`.
+For the separate CAD-kernel path, save the project JSON and drag the `.wavecad.json` onto `Export-Solid-Step.bat`. That Docker path runs OpenCascade-based sewing and validation and writes `exports/outer-solid.step` plus `exports/outer-solid.report.json`.
 
 ## Panel Strategy
 
 The surface is generated as a full cuboid shell first. DFM panel export then derives six flat-workholding panel bodies from the same wave field.
 
-The fixed first-pass split gives each panel no more than two routed curved edges. The other two local edges stay square for mating and workholding. The STEP panel export writes six named smooth BREP bodies in one file; OBJ and STL panel exports are kept as preview/debug outputs.
+The fixed first-pass split gives each panel no more than two routed curved edges. The other two local edges stay square for mating and workholding. The Output section lets the user select any combination of panels and creates a separate labeled file for each selection. On browsers with directory access, WaveGen3D creates a `<project>-dfm-panels` folder inside the chosen location; otherwise it falls back to individual browser downloads.
+
+Each DFM STEP file contains one named `MANIFOLD_SOLID_BREP`. Its sculpted top is a spline surface, while its flat underside and four boundary faces are explicit STEP `PLANE` surfaces so SolidWorks can recognize the machinable flats directly.
 
 This DFM path intentionally does not add rabbets, screw holes, driver cutouts, internal clearances, or final assembly joinery yet.

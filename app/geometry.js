@@ -90,6 +90,7 @@
       showDimensions: true,
       showAnalysis: false,
       showGrid: true,
+      panelMode: "model",
       colorMode: "relief",
       heightContrast: 2.35
     },
@@ -102,7 +103,8 @@
         edgeOwnership: "balancedTwoEdge",
         maxCurvedEdgesPerPanel: 2,
         edgeRadius: 0.75,
-        layoutGap: 4
+        layoutGap: 4,
+        exportPanels: DFM_PANEL_ORDER.slice()
       }
     },
     export: {

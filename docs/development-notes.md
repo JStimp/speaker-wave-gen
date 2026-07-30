@@ -31,6 +31,10 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added corner wrap geometry for smoother wrapped edges while preserving a flat underside contact patch.
 - Added browser JSON, OBJ, STL, Smooth surface STEP, faceted fallback STEP, and PNG exports.
 - Added first-pass DFM panel exports: six flat-workholding panel solids with no more than two routed curved edges per panel, plus Smooth STEP, OBJ, and STL downloads.
+- Added transparent panel-split and exploded panel visualization modes. Exploded panels are selectable and open a focused DFM properties overlay while source markers stay hidden.
+- Added DFM panel inclusion controls and separate labeled STEP/OBJ/STL files for the selected faces.
+- Changed flat DFM STEP boundaries to explicit analytic `PLANE` surfaces so SolidWorks can recognize them as planar faces.
+- Grouped Save/Load under Project and consolidated all assembled and panel outputs in the Output section.
 - Added a Docker-only CadQuery/OCP solid STEP exporter for the first outer-block SolidWorks import path.
 - Added an example `default-speaker.wavecad.json` project.
 - Added a browser smoke test page.
@@ -51,14 +55,16 @@ This file tracks the practical work being done in the repo so the project has a 
 ## Known Limits
 
 - Rectangular cabinet only.
-- Browser file dialogs use upload/download controls.
+- Browser project files use normal upload/download controls. Chromium directory access is used for grouped separate DFM files, with individual downloads as the compatibility fallback.
 - OBJ/STL are mesh exports, not editable CAD surfaces.
 - Browser STEP defaults to the Smooth surface BREP path. Smooth reliable solid STEP remains the overall export goal; the Docker exporter is the separate CAD-kernel path toward stronger validation.
-- DFM panel STEP is a browser-generated smooth BREP prototype, not a fully validated CAD-kernel sew.
+- DFM panel STEP is a browser-generated BREP prototype with one spline top and five analytic planar faces per panel, not a fully validated CAD-kernel sew.
 - DFM panel outputs do not include rabbets, screw holes, driver cutouts, internal clearances, or final joinery yet.
 - The Docker exporter currently targets one outer solid block; hollow shells, cutouts, and CAD-kernel separated panels remain future work.
 
 ## Verification Run By Codex
 
 - Static smoke test page was added for browser-side checks.
+- Browser checks cover model/panel-split/exploded mode switching, panel selection overlays, export selection, and console errors.
+- DFM STEP checks confirm six panel solids, five analytic planes per panel, flat undersides, and one solid in each individual panel file.
 - Old npm/Electron/Python checks are intentionally removed from the active prototype path.

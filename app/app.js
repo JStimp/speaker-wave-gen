@@ -5,6 +5,14 @@
   const Exporters = window.WaveExporters;
   const UNIT_LABELS = { in: "in", mm: "mm" };
   const SOURCE_COLORS = [0xf05b4f, 0x54c46b, 0x4f8df0, 0xd6b84d, 0xc678dd, 0x4fd0c8, 0xff8a3d];
+  const PANEL_COLORS = {
+    front: 0x55b7d9,
+    right: 0xe2b455,
+    back: 0xb88ad8,
+    left: 0x67bd79,
+    top: 0xe77b67,
+    bottom: 0x9aa8b3
+  };
   let project = Geometry.createDefaultProject();
   let mesh = null;
   let renderer = null;
@@ -17,6 +25,8 @@
   let pointer = null;
   let selectedSourceKey = "driver:0";
   let overlaySourceKey = "";
+  let selectedPanelFace = "front";
+  let overlayPanelFace = "";
   let copiedSourceSettings = null;
   let activeDimension = null;
   let rebuildTimer = 0;
@@ -30,6 +40,7 @@
     initThree();
     initTooltipSystem();
     initSourceOverlay();
+    initPanelOverlay();
     bindControls();
     syncForm();
     rebuild();
@@ -97,6 +108,16 @@
     });
 
     document.getElementById("reset-view").addEventListener("click", resetView);
+    document.querySelectorAll("[data-panel-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        project.preview.panelMode = button.dataset.panelMode;
+        if (project.preview.panelMode === "exploded") closeSourceOverlay();
+        else closePanelOverlay();
+        updatePanelModeButtons();
+        drawMesh(mesh);
+        resetView();
+      });
+    });
 
     document.querySelectorAll("[data-path]").forEach((input) => {
       input.addEventListener("input", () => {
@@ -175,7 +196,8 @@
     document.getElementById("export-dfm-step").addEventListener("click", () => exportDfmPanels("step"));
     document.getElementById("export-dfm-obj").addEventListener("click", () => exportDfmPanels("obj"));
     document.getElementById("export-dfm-stl").addEventListener("click", () => exportDfmPanels("stl"));
-    document.getElementById("prepare-solid-step").addEventListener("click", prepareSolidStepProject);
+    document.getElementById("select-all-panels").addEventListener("click", () => setAllPanelExports(true));
+    document.getElementById("select-no-panels").addEventListener("click", () => setAllPanelExports(false));
     document.getElementById("save-png").addEventListener("click", saveScreenshot);
     document.getElementById("load-project").addEventListener("change", loadProjectFile);
   }
@@ -198,6 +220,15 @@
     overlay.className = "source-overlay";
     overlay.hidden = true;
     overlay.innerHTML = '<div class="source-overlay-window"><div id="source-overlay-body" class="source-overlay-body"></div></div>';
+    document.body.appendChild(overlay);
+  }
+
+  function initPanelOverlay() {
+    const overlay = document.createElement("div");
+    overlay.id = "panel-overlay";
+    overlay.className = "panel-overlay";
+    overlay.hidden = true;
+    overlay.innerHTML = '<div class="panel-overlay-window"><div id="panel-overlay-body" class="panel-overlay-body"></div></div>';
     document.body.appendChild(overlay);
   }
 
@@ -302,6 +333,8 @@
       else input.value = value;
     });
     renderSources();
+    renderDfmExportSelection();
+    updatePanelModeButtons();
     updateControlAvailability();
   }
 
@@ -424,6 +457,10 @@
     const overlay = document.getElementById("source-overlay");
     const body = document.getElementById("source-overlay-body");
     if (!overlay || !body || !overlaySourceKey) return;
+    if (currentPanelMode() === "exploded") {
+      closeSourceOverlay();
+      return;
+    }
 
     const entries = sourceEntries();
     const entry = entries.find((candidate) => candidate.key === overlaySourceKey);
@@ -442,6 +479,62 @@
   function closeSourceOverlay() {
     overlaySourceKey = "";
     const overlay = document.getElementById("source-overlay");
+    if (overlay) overlay.hidden = true;
+  }
+
+  function renderPanelOverlay() {
+    const overlay = document.getElementById("panel-overlay");
+    const body = document.getElementById("panel-overlay-body");
+    if (!overlay || !body || !overlayPanelFace || currentPanelMode() !== "exploded") {
+      closePanelOverlay();
+      return;
+    }
+
+    const plan = Geometry.dfmPanelPlan(project);
+    const panel = plan.panels.find((candidate) => candidate.face === overlayPanelFace);
+    if (!panel) {
+      closePanelOverlay();
+      return;
+    }
+
+    const selected = selectedPanelFaces().indexOf(panel.face) !== -1;
+    const color = PANEL_COLORS[panel.face] || 0xd6b84d;
+    overlay.style.setProperty("--panel-color", colorCss(color));
+    body.innerHTML = [
+      '<div class="panel-editor-header">',
+      '<span class="panel-swatch"></span>',
+      '<div><strong>' + escapeHtml(panel.label) + '</strong><span>DFM workholding panel</span></div>',
+      '<button class="panel-close" type="button" data-close-panel-overlay aria-label="Close panel properties">Close</button>',
+      "</div>",
+      '<label class="check panel-export-check"><input type="checkbox" data-overlay-panel-export="' + panel.face + '" ' + (selected ? "checked" : "") + '> Include in DFM export</label>',
+      '<div class="panel-property-grid">',
+      panelProperty("Blank width", fmtDimension(panel.width)),
+      panelProperty("Blank height", fmtDimension(panel.height)),
+      panelProperty("Thickness", fmtDimension(project.cabinet.dimensions.wallThickness)),
+      panelProperty("Route radius", fmtDimension(panel.edgeRadius)),
+      "</div>",
+      '<div class="panel-edge-groups">',
+      '<div><strong>Routed / radiused</strong><span>' + escapeHtml(panel.ownedEdgeLabels.join(", ")) + '</span></div>',
+      '<div><strong>Square mating edges</strong><span>' + escapeHtml(panel.flatEdgeLabels.join(", ")) + '</span></div>',
+      "</div>"
+    ].join("");
+    overlay.hidden = false;
+
+    body.querySelector("[data-close-panel-overlay]").addEventListener("click", closePanelOverlay);
+    body.querySelector("[data-overlay-panel-export]").addEventListener("change", (event) => {
+      setPanelExport(panel.face, event.target.checked);
+      renderDfmExportSelection();
+      renderPanelOverlay();
+    });
+  }
+
+  function panelProperty(label, value) {
+    return '<div><strong>' + escapeHtml(label) + '</strong><span>' + escapeHtml(value) + '</span></div>';
+  }
+
+  function closePanelOverlay() {
+    overlayPanelFace = "";
+    const overlay = document.getElementById("panel-overlay");
     if (overlay) overlay.hidden = true;
   }
 
@@ -676,6 +769,7 @@
 
     previewRoot = new THREE.Group();
     const dims = project.cabinet.dimensions;
+    const panelMode = currentPanelMode();
 
     if (grid) {
       grid.visible = project.preview.showGrid !== false;
@@ -686,15 +780,22 @@
     if (project.preview.showOutline) previewRoot.add(createOutlineBox(dims));
     if (project.preview.showAxes) previewRoot.add(createAxes(dims, buildAreaSpan(dims)));
     if (project.preview.showDimensions) previewRoot.add(createDimensionGuides(dims));
-    previewRoot.add(createSurface(nextMesh));
-    if (project.preview.showAnalysis) previewRoot.add(createAnalysisPlanes(nextMesh, dims));
+    if (panelMode !== "exploded") {
+      previewRoot.add(createSurface(nextMesh, { opacity: panelMode === "ghost" ? 0.62 : 1 }));
+    }
+    if (panelMode === "ghost" || panelMode === "exploded") {
+      const panelSet = Geometry.generateDfmPanelMeshes(project, { resolution: project.preview.resolution });
+      previewRoot.add(createDfmPanelView(panelSet, panelMode));
+    }
+    if (project.preview.showAnalysis && panelMode !== "exploded") previewRoot.add(createAnalysisPlanes(nextMesh, dims));
 
-    if (project.preview.showPanels) previewRoot.add(createWire(nextMesh));
-    if (project.preview.showSeams) previewRoot.add(createSeams(nextMesh.overlays.seams));
-    if (project.preview.showDrivers) previewRoot.add(createDriverRings(nextMesh.overlays.drivers));
-    if (project.preview.showSources) previewRoot.add(createSources(nextMesh.overlays.sources));
+    if (project.preview.showPanels && panelMode !== "exploded") previewRoot.add(createWire(nextMesh));
+    if (project.preview.showSeams && panelMode === "model") previewRoot.add(createSeams(nextMesh.overlays.seams));
+    if (project.preview.showDrivers && panelMode !== "exploded") previewRoot.add(createDriverRings(nextMesh.overlays.drivers));
+    if (project.preview.showSources && panelMode !== "exploded") previewRoot.add(createSources(nextMesh.overlays.sources));
 
     scene.add(previewRoot);
+    renderPanelOverlay();
   }
 
   function handlePointerDown(event) {
@@ -704,6 +805,13 @@
     pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
     const hits = raycaster.intersectObjects(previewRoot.children, true);
+    const panelHit = hits.map((hit) => panelFaceFromObject(hit.object)).find(Boolean);
+    if (panelHit && currentPanelMode() === "exploded") {
+      selectedPanelFace = panelHit;
+      overlayPanelFace = panelHit;
+      drawMesh(mesh);
+      return;
+    }
     const sourceHit = hits.map((hit) => sourceKeyFromObject(hit.object)).find(Boolean);
     if (sourceHit) {
       selectSource(sourceHit, true);
@@ -714,6 +822,15 @@
     let current = object;
     while (current) {
       if (current.userData && current.userData.sourceKey) return current.userData.sourceKey;
+      current = current.parent;
+    }
+    return "";
+  }
+
+  function panelFaceFromObject(object) {
+    let current = object;
+    while (current) {
+      if (current.userData && current.userData.panelFace) return current.userData.panelFace;
       current = current.parent;
     }
     return "";
@@ -736,29 +853,32 @@
     );
   }
 
-  function exportDfmPanels(format) {
+  async function exportDfmPanels(format) {
     const resolution = project.export.resolution || project.preview.resolution || "high";
     const panelSet = Geometry.generateDfmPanelMeshes(project, { resolution });
-    if (format === "step") Exporters.exportDfmPanelsStep(project, panelSet);
-    if (format === "obj") Exporters.exportDfmPanelsObj(project, panelSet);
-    if (format === "stl") Exporters.exportDfmPanelsStl(project, panelSet);
-    const kind = format === "step" ? " smooth STEP" : " " + format.toUpperCase();
-    setExportStatus(
-      "DFM panel" + kind + " built at " + resolution + " quality (" +
-      panelSet.summary.panelCount + " panels / " +
-      panelSet.summary.vertexCount.toLocaleString() + " verts / " +
-      panelSet.summary.triangleCount.toLocaleString() + " tris)."
-    );
+    const faces = selectedPanelFaces();
+    if (!faces.length) {
+      setExportStatus("Select at least one DFM panel to export.");
+      return;
+    }
+    setExportStatus("Preparing " + faces.length + " separate " + format.toUpperCase() + " panel file" + (faces.length === 1 ? "" : "s") + "...");
+    try {
+      const result = await Exporters.exportDfmPanelsSeparate(project, panelSet, faces, format);
+      const destination = result.method === "directory" ? " to the selected folder" : " as browser downloads";
+      setExportStatus("Saved " + result.count + " labeled DFM " + format.toUpperCase() + " panel file" + (result.count === 1 ? "" : "s") + destination + ".");
+    } catch (error) {
+      if (error && error.name === "AbortError") {
+        setExportStatus("DFM export canceled.");
+        return;
+      }
+      console.error(error);
+      setExportStatus("DFM export failed: " + error.message);
+    }
   }
 
   function setExportStatus(message) {
     const status = document.getElementById("export-status");
     if (status) status.textContent = message;
-  }
-
-  function prepareSolidStepProject() {
-    Exporters.exportSolidStepProjectJson(project);
-    setExportStatus("Saved Docker exporter JSON.");
   }
 
   function createOutlineBox(dims) {
@@ -1063,7 +1183,7 @@
     return sprite;
   }
 
-  function createSurface(nextMesh) {
+  function createSurface(nextMesh, options) {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.Float32BufferAttribute(nextMesh.vertices, 3));
     geometry.setAttribute("color", new THREE.Float32BufferAttribute(heightColors(nextMesh.heights), 3));
@@ -1075,10 +1195,98 @@
       vertexColors: true,
       roughness: 0.58,
       metalness: 0,
+      transparent: Boolean(options && options.opacity < 1),
+      opacity: options && options.opacity != null ? options.opacity : 1,
+      depthWrite: !(options && options.opacity < 1),
       side: THREE.DoubleSide
     });
 
     return new THREE.Mesh(geometry, material);
+  }
+
+  function createDfmPanelView(panelSet, mode) {
+    const group = new THREE.Group();
+    const dims = project.cabinet.dimensions;
+    const span = Math.max(dims.width, dims.height, dims.depth);
+    const separation = mode === "exploded" ? span * 0.42 : span * 0.0025;
+
+    panelSet.panels.forEach((panel) => {
+      const positions = [];
+      for (let i = 0; i < panel.vertices.length; i += 3) {
+        const local = {
+          x: panel.vertices[i] - panel.origin.x,
+          y: panel.vertices[i + 1] - panel.origin.y,
+          z: panel.vertices[i + 2] - panel.origin.z
+        };
+        const point = assembledPanelPoint(panel.face, local, dims, panel.thickness, separation);
+        positions.push(point.x, point.y, point.z);
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setIndex(panel.indices);
+      geometry.computeVertexNormals();
+      geometry.computeBoundingSphere();
+
+      const selected = panel.face === selectedPanelFace;
+      const color = PANEL_COLORS[panel.face] || 0xd6b84d;
+      const material = new THREE.MeshStandardMaterial({
+        color,
+        roughness: 0.48,
+        metalness: 0,
+        transparent: true,
+        opacity: mode === "ghost" ? 0.26 : (selected ? 0.96 : 0.82),
+        depthWrite: mode !== "ghost",
+        side: THREE.DoubleSide
+      });
+      if (selected && mode === "exploded") {
+        material.emissive = new THREE.Color(color);
+        material.emissiveIntensity = 0.12;
+      }
+
+      const panelMesh = new THREE.Mesh(geometry, material);
+      panelMesh.userData.panelFace = panel.face;
+      panelMesh.renderOrder = mode === "ghost" ? 6 : 2;
+      group.add(panelMesh);
+
+      const edgeGeometry = new THREE.EdgesGeometry(geometry, 22);
+      const edgeMaterial = new THREE.LineBasicMaterial({
+        color: selected && mode === "exploded" ? 0xffffff : color,
+        transparent: true,
+        opacity: mode === "ghost" ? 0.78 : 0.92
+      });
+      const edges = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+      edges.userData.panelFace = panel.face;
+      edges.renderOrder = mode === "ghost" ? 7 : 3;
+      group.add(edges);
+
+      if (mode === "exploded") {
+        const center = panelMesh.geometry.boundingSphere.center.clone();
+        group.add(createCadLabelSprite(panel.label, colorCss(color), center, 4.8, selected ? 25 : 22));
+      }
+    });
+
+    return group;
+  }
+
+  function assembledPanelPoint(face, local, dims, thickness, separation) {
+    const zCenter = dims.height / 2;
+    if (face === "front") {
+      return { x: local.x, y: dims.depth / 2 - thickness + local.z + separation, z: local.y + zCenter };
+    }
+    if (face === "back") {
+      return { x: -local.x, y: -dims.depth / 2 + thickness - local.z - separation, z: local.y + zCenter };
+    }
+    if (face === "right") {
+      return { x: dims.width / 2 - thickness + local.z + separation, y: -local.x, z: local.y + zCenter };
+    }
+    if (face === "left") {
+      return { x: -dims.width / 2 + thickness - local.z - separation, y: -local.x, z: local.y + zCenter };
+    }
+    if (face === "top") {
+      return { x: local.x, y: -local.y, z: dims.height - thickness + local.z + separation };
+    }
+    return { x: local.x, y: -local.y, z: thickness - local.z - separation };
   }
 
   function createWire(nextMesh) {
@@ -1206,22 +1414,65 @@
       ].join("");
     }
 
-    updateDfmPanelSummary();
+    renderDfmExportSelection();
+    if (overlayPanelFace) renderPanelOverlay();
   }
 
-  function updateDfmPanelSummary() {
-    const summary = document.getElementById("dfm-panel-summary");
-    if (!summary) return;
+  function renderDfmExportSelection() {
+    const selection = document.getElementById("dfm-export-selection");
+    if (!selection) return;
     const plan = Geometry.dfmPanelPlan(project);
-    summary.innerHTML = plan.panels.map((panel) => {
+    const selected = selectedPanelFaces();
+    selection.innerHTML = plan.panels.map((panel) => {
+      const color = PANEL_COLORS[panel.face] || 0xd6b84d;
       return [
-        "<div>",
-        "<strong>" + escapeHtml(panel.label) + "</strong>",
-        "<span>Routed: " + escapeHtml(panel.ownedEdgeLabels.join(", ")) + "</span>",
-        "<span>Square: " + escapeHtml(panel.flatEdgeLabels.join(", ")) + "</span>",
-        "</div>"
+        '<label class="panel-export-option" style="--panel-color:' + colorCss(color) + '">',
+        '<input type="checkbox" data-panel-export="' + panel.face + '" ' + (selected.indexOf(panel.face) !== -1 ? "checked" : "") + '>',
+        '<span class="panel-export-swatch"></span>',
+        '<span>' + escapeHtml(panel.label.replace(" panel", "")) + "</span>",
+        "</label>"
       ].join("");
     }).join("");
+    selection.querySelectorAll("[data-panel-export]").forEach((input) => {
+      input.addEventListener("change", () => {
+        setPanelExport(input.dataset.panelExport, input.checked);
+        if (overlayPanelFace === input.dataset.panelExport) renderPanelOverlay();
+      });
+    });
+  }
+
+  function selectedPanelFaces() {
+    const dfm = project.panelization && project.panelization.dfm;
+    const configured = dfm && Array.isArray(dfm.exportPanels) ? dfm.exportPanels : Geometry.DFM_PANEL_ORDER;
+    return Geometry.DFM_PANEL_ORDER.filter((face) => configured.indexOf(face) !== -1);
+  }
+
+  function setPanelExport(face, enabled) {
+    const current = selectedPanelFaces();
+    const next = enabled
+      ? current.concat(face).filter((value, index, array) => array.indexOf(value) === index)
+      : current.filter((value) => value !== face);
+    project.panelization.dfm.exportPanels = Geometry.DFM_PANEL_ORDER.filter((value) => next.indexOf(value) !== -1);
+  }
+
+  function setAllPanelExports(enabled) {
+    project.panelization.dfm.exportPanels = enabled ? Geometry.DFM_PANEL_ORDER.slice() : [];
+    renderDfmExportSelection();
+    if (overlayPanelFace) renderPanelOverlay();
+  }
+
+  function currentPanelMode() {
+    const mode = project.preview && project.preview.panelMode;
+    return mode === "ghost" || mode === "exploded" ? mode : "model";
+  }
+
+  function updatePanelModeButtons() {
+    const mode = currentPanelMode();
+    document.querySelectorAll("[data-panel-mode]").forEach((button) => {
+      const active = button.dataset.panelMode === mode;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
   }
 
   function resize() {
@@ -1243,7 +1494,7 @@
     const dims = project.cabinet.dimensions;
     const span = Math.max(dims.width, dims.height, dims.depth);
     const targetZ = dims.height / 2;
-    const distance = span * 1.85;
+    const distance = span * (currentPanelMode() === "exploded" ? 2.35 : 1.85);
     camera.position.set(-distance, distance, targetZ + distance);
     controls.target.set(0, 0, targetZ);
     controls.update();

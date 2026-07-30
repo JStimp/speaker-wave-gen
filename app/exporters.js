@@ -154,6 +154,87 @@
     downloadText(name + ".dfm-panels.step", panelSetToStep(panelSet, project, name), "application/step");
   }
 
+  async function exportDfmPanelsSeparate(project, panelSet, faces, format) {
+    const projectName = safeName(project.project.name || "wavegen3d");
+    const selected = panelSet.panels.filter((panel) => faces.indexOf(panel.face) !== -1);
+    if (!selected.length) throw new Error("No DFM panels were selected.");
+    let folder = null;
+
+    if (typeof window !== "undefined" && typeof window.showDirectoryPicker === "function") {
+      const root = await window.showDirectoryPicker({ mode: "readwrite" });
+      folder = await root.getDirectoryHandle(projectName + "-dfm-panels", { create: true });
+    }
+
+    const files = selected.map((panel) => {
+      const centeredPanel = centerPanelForSeparateExport(panel);
+      const singlePanelSet = {
+        units: panelSet.units,
+        resolution: panelSet.resolution,
+        panels: [centeredPanel]
+      };
+      const baseName = projectName + "-dfm-" + safeName(panel.face) + "-panel";
+      if (format === "step") {
+        return {
+          filename: baseName + ".step",
+          contents: panelSetToStep(singlePanelSet, project, baseName),
+          mimeType: "application/step"
+        };
+      }
+      if (format === "obj") {
+        return {
+          filename: baseName + ".obj",
+          contents: panelSetToObj(singlePanelSet, baseName),
+          mimeType: "text/plain"
+        };
+      }
+      if (format === "stl") {
+        return {
+          filename: baseName + ".stl",
+          contents: panelSetToStl(singlePanelSet, baseName),
+          mimeType: "model/stl"
+        };
+      }
+      throw new Error("Unsupported DFM panel format: " + format);
+    });
+
+    if (folder) {
+      for (const file of files) {
+        const handle = await folder.getFileHandle(file.filename, { create: true });
+        const writable = await handle.createWritable();
+        await writable.write(new Blob([file.contents], { type: file.mimeType }));
+        await writable.close();
+      }
+      return { count: files.length, method: "directory" };
+    }
+
+    files.forEach((file, index) => {
+      setTimeout(() => downloadText(file.filename, file.contents, file.mimeType), index * 180);
+    });
+    return { count: files.length, method: "downloads" };
+  }
+
+  function centerPanelForSeparateExport(panel) {
+    const origin = panel.origin || { x: 0, y: 0, z: 0 };
+    const centered = Object.assign({}, panel);
+    centered.origin = { x: 0, y: 0, z: 0 };
+    centered.vertices = panel.vertices.map((value, index) => {
+      if (index % 3 === 0) return value - origin.x;
+      if (index % 3 === 1) return value - origin.y;
+      return value - origin.z;
+    });
+    centered.topGrid = offsetPointGrid(panel.topGrid, origin);
+    centered.bottomGrid = offsetPointGrid(panel.bottomGrid, origin);
+    return centered;
+  }
+
+  function offsetPointGrid(grid, origin) {
+    return grid.map((row) => row.map((point) => ({
+      x: point.x - origin.x,
+      y: point.y - origin.y,
+      z: point.z - origin.z
+    })));
+  }
+
   function panelSetToObj(panelSet, name) {
     const lines = [
       "# WaveGen3D DFM panel export",
@@ -226,7 +307,7 @@
 
     panelSet.panels.forEach((panel) => {
       const edgeMap = new Map();
-      const faceIds = dfmPanelSurfacePatches(panel, controlLimit).map((patch) => addSplineFace(add, edgeMap, patch));
+      const faceIds = dfmPanelSurfacePatches(panel, controlLimit).map((patch) => addSurfaceFace(add, edgeMap, patch));
       const shell = add("CLOSED_SHELL('',(" + faceIds.join(",") + "))");
       bodies.push(add("MANIFOLD_SOLID_BREP('" + safeStepString(panel.label + " DFM solid") + "'," + shell + ")"));
     });
@@ -244,31 +325,75 @@
     const lastColumn = top[0].length - 1;
     return [
       makeSurfacePatch(sampleGridAsColumns(top, controlLimit)),
-      makeSurfacePatch(sampleGridAsColumns(bottom, controlLimit, { reverseRows: true })),
-      makeSurfacePatch(edgeSurfaceColumns(top[0], bottom[0], controlLimit)),
+      makeSurfacePatch(sampleGridAsColumns(bottom, controlLimit, { reverseRows: true }), { surfaceType: "plane" }),
+      makeSurfacePatch(edgeSurfaceColumns(top[0], bottom[0], controlLimit), { surfaceType: "plane" }),
       makeSurfacePatch(edgeSurfaceColumns(
         top.map((row) => row[lastColumn]),
         bottom.map((row) => row[lastColumn]),
         controlLimit
-      )),
-      makeSurfacePatch(edgeSurfaceColumns(top[lastRow].slice().reverse(), bottom[lastRow].slice().reverse(), controlLimit)),
+      ), { surfaceType: "plane" }),
+      makeSurfacePatch(edgeSurfaceColumns(top[lastRow].slice().reverse(), bottom[lastRow].slice().reverse(), controlLimit), { surfaceType: "plane" }),
       makeSurfacePatch(edgeSurfaceColumns(
         top.map((row) => row[0]).reverse(),
         bottom.map((row) => row[0]).reverse(),
         controlLimit
-      ))
+      ), { surfaceType: "plane" })
     ];
   }
 
-  function makeSurfacePatch(points, faceSense) {
+  function makeSurfacePatch(points, options) {
+    const settings = options && typeof options === "object" ? options : {};
     return {
       points,
-      faceSense: faceSense !== false,
+      faceSense: settings.faceSense !== false,
+      surfaceType: settings.surfaceType || "spline",
       bottom: points.map((column) => column[0]),
       right: points[points.length - 1].slice(),
       top: points.map((column) => column[column.length - 1]).reverse(),
       left: points[0].slice().reverse()
     };
+  }
+
+  function addSurfaceFace(add, edgeMap, patch) {
+    if (patch.surfaceType === "plane") return addPlanarFace(add, edgeMap, patch);
+    return addSplineFace(add, edgeMap, patch);
+  }
+
+  function addPlanarFace(add, edgeMap, patch) {
+    const origin = patch.points[0][0];
+    const normal = patchNormal(patch.points);
+    const ref = referenceDirection(normal);
+    const location = addPoint(add, origin);
+    const normalDir = add("DIRECTION('',(" + fmt(normal.x) + "," + fmt(normal.y) + "," + fmt(normal.z) + "))");
+    const refDir = add("DIRECTION('',(" + fmt(ref.x) + "," + fmt(ref.y) + "," + fmt(ref.z) + "))");
+    const placement = add("AXIS2_PLACEMENT_3D(''," + location + "," + normalDir + "," + refDir + ")");
+    const plane = add("PLANE(''," + placement + ")");
+    const orientedEdges = [
+      orientedEdgeForPoints(add, edgeMap, patch.bottom),
+      orientedEdgeForPoints(add, edgeMap, patch.right),
+      orientedEdgeForPoints(add, edgeMap, patch.top),
+      orientedEdgeForPoints(add, edgeMap, patch.left)
+    ];
+    const loop = add("EDGE_LOOP('',(" + orientedEdges.join(",") + "))");
+    const bound = add("FACE_OUTER_BOUND(''," + loop + ",.T.)");
+    return add("ADVANCED_FACE('',(" + bound + ")," + plane + "," + (patch.faceSense === false ? ".F." : ".T.") + ")");
+  }
+
+  function patchNormal(points) {
+    const origin = points[0][0];
+    const alongU = subtractPoint(points[points.length - 1][0], origin);
+    const alongV = subtractPoint(points[0][points[0].length - 1], origin);
+    const cross = {
+      x: alongU.y * alongV.z - alongU.z * alongV.y,
+      y: alongU.z * alongV.x - alongU.x * alongV.z,
+      z: alongU.x * alongV.y - alongU.y * alongV.x
+    };
+    const length = Math.sqrt(cross.x * cross.x + cross.y * cross.y + cross.z * cross.z) || 1;
+    return { x: cross.x / length, y: cross.y / length, z: cross.z / length };
+  }
+
+  function subtractPoint(a, b) {
+    return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
   }
 
   function sampleGridAsColumns(grid, maxControls, options) {
@@ -525,6 +650,7 @@
     exportDfmPanelsObj,
     exportDfmPanelsStl,
     exportDfmPanelsStep,
+    exportDfmPanelsSeparate,
     meshToObj,
     meshToStl,
     meshToStep,

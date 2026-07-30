@@ -29,10 +29,13 @@ You can also open `app/index.html` directly in a browser.
 - Advanced source controls for position, diameter, amplitude, wavelength, phase, and falloff.
 - Relief depth, flat-bottom, bias, normalization, preview resolution, export quality, and overlay controls.
 - Visual helpers for a floor origin marker, offset XYZ direction triad, outline box, floor grid, slim dimension guides, and min/max relief analysis planes.
+- Three CAD viewing modes: assembled model, transparent panel-split ghosts, and a selectable exploded six-panel view.
+- Clickable exploded panels with a compact properties window for blank size, thickness, routed edges, square mating edges, and export inclusion.
 - Hover tooltips on controls, including STEP-specific notes for export quality and spline controls.
 - Orbit/pan/zoom 3D viewport using vendored Three.js files.
-- Browser downloads for `.wavecad.json`, `.obj`, `.stl`, Smooth surface STEP, optional Docker STEP project `.wavecad.json`, and preview `.png`.
-- DFM panel exports for six flat-workholding panel solids: Smooth STEP for CAD/CAM plus OBJ/STL debug exports.
+- Browser downloads for `.wavecad.json`, `.obj`, `.stl`, Smooth surface STEP, and preview `.png`.
+- Selectable DFM exports that create separately named STEP/OBJ/STL files for the chosen panels. Chromium browsers can write them into an automatically named project folder.
+- DFM STEP uses analytic planar faces for the flat underside and panel boundaries, with a spline surface only for the sculpted wave face.
 - OBJ/STL/browser STEP exports use a separate output quality setting, so they can be higher resolution or smoother than the live preview.
 - Higher default preview/detail settings for inspecting wave relief without immediately changing controls.
 - Default STEP export uses Smooth surface STEP. Faceted solid STEP remains available as a fallback when troubleshooting CAD imports.
@@ -64,7 +67,7 @@ Open:
 app/smoke-test.html
 ```
 
-It checks that the default project loads, mesh vertices are finite, rounded front/right seam heights match, flat-bottom floor relief behaves correctly, the export mesh is higher resolution than the preview mesh, DFM panel bottoms stay flat, and OBJ/STL/STEP exporters produce text.
+It checks that the default project loads, mesh vertices are finite, rounded front/right seam heights match, flat-bottom floor relief behaves correctly, DFM panel bottoms stay flat, individual panel STEP files contain one solid, planar boundaries use STEP planes, and OBJ/STL/STEP exporters produce text.
 
 ## STEP Direction
 
@@ -74,4 +77,4 @@ The static app defaults to Smooth surface STEP because that is the production-di
 Export-Solid-Step.bat
 ```
 
-From the browser, use `Export STEP` for the assembled Smooth surface STEP reference. Use `DFM Panel STEP` for the six separate flat-workholding panel solids. Switch `STEP type` to Faceted solid fallback only when you need a compatibility test for the assembled reference body. `Docker JSON` downloads a `.solid-step.wavecad.json` file for `Export-Solid-Step.bat`; that Docker path remains an outer-block experiment.
+From the Output section, use `STEP` for the assembled Smooth surface STEP reference. Select the required faces and use `Selected STEP` to create one labeled solid file per DFM panel. Switch `STEP type` to Faceted solid fallback only when you need a compatibility test for the assembled reference body. A saved `.wavecad.json` can still be passed to `Export-Solid-Step.bat`; that Docker path remains an outer-block experiment.
