@@ -17,7 +17,8 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added browser geometry math for cuboid shell sampling, continuous wave relief, driver overlays, source overlays, and seam overlays.
 - Added relief limiting from wall thickness and minimum remaining wall settings.
 - Added side-panel controls to add/remove drivers and point sources.
-- Added a flat-bottom option that keeps the underside contact patch planar for real-world placement and rounds the lower perimeter inward and upward.
+- Replaced the old flat-bottom transition with fixed planar top and bottom caps; waves now affect only the four vertical walls.
+- Restored top relief inside a unit-aware flat border with a separate smootherstep blend while keeping the bottom fully planar.
 - Added preview aids: outline box, XYZ origin axes, floor grid toggle, front-facing reset view, dimension guide overlays, and relief analysis planes tied to live deviation stats.
 - Split the origin visualization into a small floor marker and separate offset XYZ direction triad, and changed in-scene labels to slimmer CAD-style text.
 - Added hover-only tooltips throughout the UI, with viewport-clamped placement and STEP-specific notes for smooth surface quality controls.
@@ -28,11 +29,12 @@ This file tracks the practical work being done in the repo so the project has a 
 - Added independent export quality so OBJ/STL/STEP can be generated at higher resolution than preview.
 - Raised default preview/detail presets and tuned the starter cabinet, driver positions, source amplitudes, wavelengths, corner wrap, and relief depth for a better-looking first render.
 - Changed the default browser STEP mode to Smooth surface STEP and kept faceted solid STEP as an import troubleshooting fallback.
-- Added corner wrap geometry for smoother wrapped edges while preserving a flat underside contact patch.
+- Limited corner blending to vertical wall corners and faded both the blend and relief before the planar cap seams.
 - Added browser JSON, OBJ, STL, Smooth surface STEP, faceted fallback STEP, and PNG exports.
 - Added first-pass DFM panel exports: six flat-workholding panel solids with no more than two routed curved edges per panel, plus Smooth STEP, OBJ, and STL downloads.
 - Changed DFM blank sizing from six full-face overlapping slabs to flush butt-joint solids. Each square non-owning edge is inset by one wall thickness, while routed owners retain the full outside extent.
 - Added a twelve-edge DFM joint report that verifies one owner per cabinet edge, zero modeled corner overlap, and matching mating planes.
+- Changed the DFM stack to two full-size caps with four wall panels between them. The top carries inset spline relief inside flat trim; the bottom remains a fully planar BREP solid.
 - Added transparent panel-split and exploded panel visualization modes. Exploded panels are selectable and open a focused DFM properties overlay while source markers stay hidden.
 - Added DFM panel inclusion controls and separate labeled STEP/OBJ/STL files for the selected faces.
 - Changed flat DFM STEP boundaries to explicit analytic `PLANE` surfaces so SolidWorks can recognize them as planar faces.
@@ -66,7 +68,7 @@ This file tracks the practical work being done in the repo so the project has a 
 - Browser project files use normal upload/download controls. Chromium directory access is used for grouped separate DFM files, with individual downloads as the compatibility fallback.
 - OBJ/STL are mesh exports, not editable CAD surfaces.
 - Browser STEP defaults to the Smooth surface BREP path. Smooth reliable solid STEP remains the overall export goal; the Docker exporter is the separate CAD-kernel path toward stronger validation.
-- DFM panel STEP is a browser-generated BREP prototype with one spline top and five analytic planar faces per panel, not a fully validated CAD-kernel sew.
+- DFM panel STEP is a browser-generated BREP prototype, not a fully validated CAD-kernel sew. Wall and top panels use one spline plus five planes; the bottom uses six planes.
 - DFM panel outputs use zero-clearance butt joints and do not yet include rabbets, screw holes, driver cutouts, glue gaps, machining tolerances, or internal clearances.
 - The Docker exporter currently targets one outer solid block; hollow shells, cutouts, and CAD-kernel separated panels remain future work.
 
@@ -75,5 +77,5 @@ This file tracks the practical work being done in the repo so the project has a 
 - Static smoke test page was added for browser-side checks.
 - Browser checks cover model/panel-split/exploded mode switching, panel selection overlays, export selection, and console errors.
 - Browser checks cover tool-tab switching, full-width dock collapse/reopen, contextual source/panel tabs, panel visibility, view drawer layout, and both wheel-zoom origins.
-- DFM checks confirm six panel solids, one owner on each of twelve cabinet edges, zero corner-volume overlap, matched mating planes, five analytic planes per panel, flat undersides, and one solid in each individual panel file.
+- DFM checks confirm four waved walls, one inset-wave top, one planar bottom, one owner on each of twelve cabinet edges, zero corner-volume overlap, matched mating planes, 31 total analytic panel planes, and one solid in each individual panel file.
 - Old npm/Electron/Python checks are intentionally removed from the active prototype path.

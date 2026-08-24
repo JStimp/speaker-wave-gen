@@ -110,7 +110,7 @@
               <label data-tip="Overall cabinet height along the blue Z direction. The bottom contact plane remains Z=0."><span><span class="axis-dot axis-z"></span>Height Z</span><input data-path="cabinet.dimensions.height" data-dimension="z" type="number" step="0.125"></label>
               <label data-tip="Nominal material thickness used to limit the maximum relief depth.">Wall <input data-path="cabinet.dimensions.wallThickness" type="number" step="0.0625"></label>
             </div>
-            <label data-tip="Rounds the cabinet edges before waves are applied so the relief wraps more smoothly around corners.">Corner wrap <input data-path="cabinet.cornerWrap" type="range" min="0" max="1" step="0.01"></label>
+            <label data-tip="Blends only the four vertical wall corners. The blend fades out before the flat top and bottom cap seams.">Vertical corner blend <input data-path="cabinet.cornerWrap" type="range" min="0" max="1" step="0.01"></label>
           </section>
 
           <section class="panel" data-sidebar-section="build">
@@ -120,8 +120,10 @@
               <label data-tip="Global multiplier for all enabled driver and point-source waves.">Base amp <input data-path="waves.baseAmplitude" type="number" step="0.1"></label>
               <label data-tip="Offsets the wave field outward or inward before clipping. Usually keep near zero.">Bias <input data-path="waves.reliefBias" type="number" step="0.01"></label>
               <label data-tip="Minimum material that should remain after carving relief.">Min wall <input data-path="waves.minThickness" type="number" step="0.01"></label>
+              <label data-tip="Width of the completely flat perimeter around all four edges of the top panel.">Top flat border <input data-path="waves.topFlatBorder" type="number" min="0" step="0.125"></label>
+              <label data-tip="Distance over which the top wave relief smoothly fades in after the flat perimeter.">Top wave blend <input data-path="waves.topWaveBlend" type="number" min="0" step="0.125"></label>
             </div>
-            <label class="check" data-tip="Keeps the underside contact patch flat on Z=0 while the lower perimeter curls inward/upward."><input data-path="waves.flatBottom" type="checkbox"> Flat bottom</label>
+            <p class="status-text">Waves run across the four walls and the inset center of the top. The top perimeter and the entire bottom stay flat for square joints and workholding.</p>
             <label data-tip="Controls how waves are limited when they exceed the relief depth. Soft clip usually looks most natural.">Normalization
               <select data-path="waves.normalization">
                 <option value="softClip">Soft clip</option>
@@ -171,7 +173,7 @@
               <label data-tip="Radius distance used to roll owned panel edges downward for router-friendly roundovers.">Route radius <input data-path="panelization.dfm.edgeRadius" type="number" min="0" step="0.0625"></label>
               <label data-tip="Spacing between separated panel parts in the exported OBJ/STL layout.">Layout gap <input data-path="panelization.dfm.layoutGap" type="number" min="0" step="0.25"></label>
             </div>
-            <p class="status-text">Flush butt joints: every routed edge keeps the full cabinet extent; its square mating panel is shortened by one wall thickness so the solids meet without intersecting.</p>
+            <p class="status-text">Cap construction: top and bottom stay full width/depth. The top has a flat square trim around its inset wave field; the bottom remains completely planar.</p>
           </section>
 
           <section class="panel" data-sidebar-section="export">
@@ -186,7 +188,7 @@
                 <option value="production">Production</option>
               </select>
             </label>
-            <label data-tip="Controls only the assembled reference STEP. DFM panel STEP always uses a smooth top plus analytic planar boundaries.">Assembly STEP type
+            <label data-tip="Controls only the assembled reference STEP. DFM wall and inset-top STEP files use one smooth wave face; the bottom panel uses only analytic planes.">Assembly STEP type
               <select data-path="export.stepMode">
                 <option value="smoothSurfaceStep">Smooth surface STEP</option>
                 <option value="facetedSolidStep">Faceted solid fallback</option>

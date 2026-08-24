@@ -3,13 +3,21 @@
 
   const FACE_NAMES = ["front", "back", "left", "right", "top", "bottom"];
   const DFM_PANEL_ORDER = ["front", "right", "back", "left", "top", "bottom"];
-  const DFM_DEFAULT_EDGE_OWNERS = {
+  const DFM_DEFAULT_JOINT_OWNERS = {
     front: ["left", "right"],
-    right: ["top", "bottom"],
+    right: [],
     back: ["left", "right"],
-    left: ["top", "bottom"],
-    top: ["bottom", "top"],
-    bottom: ["bottom", "top"]
+    left: [],
+    top: ["left", "right", "top", "bottom"],
+    bottom: ["left", "right", "top", "bottom"]
+  };
+  const DFM_DEFAULT_ROUTED_EDGES = {
+    front: ["left", "right"],
+    right: [],
+    back: ["left", "right"],
+    left: [],
+    top: [],
+    bottom: []
   };
   const LOCAL_PANEL_EDGES = ["left", "right", "top", "bottom"];
   const DFM_JOINTS = [
@@ -46,7 +54,7 @@
     },
     cabinet: {
       preset: "rectangular",
-      cornerWrap: 0.28,
+      cornerWrap: 0.22,
       dimensions: {
         width: 18,
         height: 32,
@@ -90,7 +98,9 @@
       normalization: "softClip",
       reliefDepth: 0.34,
       reliefBias: 0,
-      flatBottom: true,
+      surfaceMode: "fourWallsInsetTop",
+      topFlatBorder: 1.5,
+      topWaveBlend: 0.75,
       minThickness: 0.5
     },
     preview: {
@@ -113,11 +123,11 @@
     panelization: {
       mode: "separated",
       includeBack: false,
-      cornerStrategy: "matchedReliefEdges",
+      cornerStrategy: "matchedWallReliefEdges",
       dfm: {
         enabled: true,
-        edgeOwnership: "balancedTwoEdge",
-        jointStrategy: "flushButt",
+        edgeOwnership: "flatCapOwners",
+        jointStrategy: "flatCapButt",
         maxCurvedEdgesPerPanel: 2,
         edgeRadius: 0.75,
         layoutGap: 4,
@@ -142,6 +152,9 @@
 
   function normalizeProject(project) {
     const result = mergeDeep(createDefaultProject(), project || {});
+    if (result.waves.surfaceMode === "fourWallFlatCaps") {
+      result.waves.surfaceMode = "fourWallsInsetTop";
+    }
     result.drivers = Array.isArray(result.drivers) ? result.drivers : [];
     result.manualSources = Array.isArray(result.manualSources) ? result.manualSources : [];
     result.drivers.forEach((driver) => normalizeSourceCenter(driver.center, result.cabinet.dimensions));
@@ -206,38 +219,38 @@
   }
 
   function applyCornerWrap(point, dims, project) {
+    if (point.face === "top" || point.face === "bottom") return point;
+
     const wrap = clamp01(Number(project && project.cabinet && project.cabinet.cornerWrap) || 0);
     const maxRadius = Math.max(0, Math.min(dims.width, dims.depth, dims.height) * 0.22);
-    const radius = maxRadius * wrap;
+    const requestedRadius = maxRadius * wrap;
+    const capThickness = Math.max(0.001, Number(dims.wallThickness) || 0.75);
+    const capBlendDistance = Math.max(requestedRadius, capThickness);
+    const capBlend = smoothstep(capThickness, capThickness + capBlendDistance, point.position.z) *
+      smoothstep(capThickness, capThickness + capBlendDistance, dims.height - point.position.z);
+    const radius = requestedRadius * capBlend;
     if (radius <= 0.000001) return point;
 
     const p = point.position;
     const hx = dims.width / 2;
     const hy = dims.depth / 2;
-    const h = dims.height;
-    const topRadius = radius;
-    const bottomRadius = radius;
-
     const qx = clamp(p.x, -hx + radius, hx - radius);
     const qy = clamp(p.y, -hy + radius, hy - radius);
-    const qz = clamp(p.z, bottomRadius, h - topRadius);
     const vx = p.x - qx;
     const vy = p.y - qy;
-    const vz = p.z - qz;
-    const length = Math.sqrt(vx * vx + vy * vy + vz * vz);
+    const length = Math.sqrt(vx * vx + vy * vy);
 
     if (length <= 0.000001) return point;
 
     const effectiveRadius = Math.min(length, radius);
     const nx = vx / length;
     const ny = vy / length;
-    const nz = vz / length;
     point.position = {
       x: qx + nx * effectiveRadius,
       y: qy + ny * effectiveRadius,
-      z: qz + nz * effectiveRadius
+      z: p.z
     };
-    point.normal = { x: nx, y: ny, z: nz };
+    point.normal = { x: nx, y: ny, z: 0 };
     point.cornerWrapped = true;
     return point;
   }
@@ -334,7 +347,7 @@
     const waves = project.waves;
     let raw = 0;
 
-    if (point.face === "bottom" && waves.flatBottom) {
+    if (point.face === "bottom") {
       return { raw: 0, displacement: 0 };
     }
 
@@ -356,28 +369,38 @@
       displacement = Math.max(-limit, Math.min(limit, displacement));
     }
 
-    if (waves.flatBottom) {
-      displacement = applyFlatBottomTransition(point, dims, displacement, limit);
-    }
+    displacement = point.face === "top"
+      ? applyTopWaveMask(point, dims, waves, displacement)
+      : applyFlatCapTransition(point, dims, displacement, limit);
 
     return { raw, displacement };
   }
 
-  function applyFlatBottomTransition(point, dims, displacement, limit) {
-    const fadeHeight = Math.min(dims.height * 0.12, Math.max(limit * 2.5, Number(dims.wallThickness) * 0.5 || limit));
-    const floorBlend = smoothstep(0, fadeHeight, point.position.z);
+  function applyFlatCapTransition(point, dims, displacement, limit) {
+    const capThickness = Math.max(0.001, Number(dims.wallThickness) || 0.75);
+    const fadeHeight = Math.min(dims.height * 0.18, Math.max(capThickness * 1.5, limit * 2.5));
+    const bottomBlend = smoothstep(capThickness, capThickness + fadeHeight, point.position.z);
+    const topBlend = smoothstep(capThickness, capThickness + fadeHeight, dims.height - point.position.z);
+    return displacement * bottomBlend * topBlend;
+  }
 
-    if (point.face === "bottom" || point.face === "top") {
-      return displacement * floorBlend;
-    }
+  function applyTopWaveMask(point, dims, waves, displacement) {
+    const halfMinimumSpan = Math.max(0, Math.min(dims.width, dims.depth) / 2);
+    const border = clamp(Number(waves.topFlatBorder) || 0, 0, halfMinimumSpan);
+    const remainingSpan = Math.max(0, halfMinimumSpan - border);
+    const blend = clamp(Number(waves.topWaveBlend) || 0, 0, remainingSpan);
+    const u = clamp01(point.uv.u);
+    const v = clamp01(point.uv.v);
+    const edgeDistance = Math.min(
+      u * dims.width,
+      (1 - u) * dims.width,
+      v * dims.depth,
+      (1 - v) * dims.depth
+    );
 
-    if (displacement <= 0) {
-      return displacement * floorBlend;
-    }
-
-    const liftBlend = smoothstep(0, Math.max(fadeHeight * 0.35, 0.0001), point.position.z);
-    const inwardCurl = Math.sin(Math.PI * floorBlend) * liftBlend;
-    return displacement * floorBlend * floorBlend - Math.abs(displacement) * inwardCurl * 0.55;
+    if (remainingSpan <= 0.000001) return 0;
+    if (blend <= 0.000001) return edgeDistance > border ? displacement : 0;
+    return displacement * smootherstep(border, border + blend, edgeDistance);
   }
 
   function generatePreviewMesh(project, options) {
@@ -445,12 +468,15 @@
     const thickness = Math.max(0.001, Number(dims.wallThickness) || 0.75);
 
     const panels = DFM_PANEL_ORDER.map((face) => {
-      const ownedEdges = ownedEdgesForPanel(normalized, face);
+      const jointOwnedEdges = jointOwnedEdgesForPanel(normalized, face);
+      const ownedEdges = routedEdgesForPanel(normalized, face);
       const flatEdges = LOCAL_PANEL_EDGES.filter((edge) => ownedEdges.indexOf(edge) === -1);
       const size = faceSize(face, dims);
-      const insets = panelJointInsets(flatEdges, thickness);
+      const jointMatingEdges = LOCAL_PANEL_EDGES.filter((edge) => jointOwnedEdges.indexOf(edge) === -1);
+      const insets = panelJointInsets(jointMatingEdges, thickness);
       const width = Math.max(0.001, size.width - insets.left - insets.right);
       const height = Math.max(0.001, size.height - insets.bottom - insets.top);
+      const isWavePanel = face !== "bottom";
       return {
         face,
         label: panelLabel(face),
@@ -463,11 +489,15 @@
           x: (insets.left - insets.right) / 2,
           y: (insets.bottom - insets.top) / 2
         },
+        isWavePanel,
+        surfaceType: isWavePanel ? "wave" : "flat",
+        jointOwnedEdges,
+        jointMatingEdges,
         ownedEdges,
         flatEdges,
         ownedEdgeLabels: panelEdgeLabels(face, ownedEdges),
         flatEdgeLabels: panelEdgeLabels(face, flatEdges),
-        edgeRadius,
+        edgeRadius: ownedEdges.length ? edgeRadius : 0,
         curvedEdgeCount: ownedEdges.length,
         valid: ownedEdges.length <= (Number(dfm.maxCurvedEdgesPerPanel) || 2)
       };
@@ -476,7 +506,7 @@
     return {
       edgeRadius,
       thickness,
-      jointStrategy: "flushButt",
+      jointStrategy: "flatCapButt",
       layoutGap: Math.max(0, Number(dfm.layoutGap) || 0),
       maxCurvedEdgesPerPanel: Number(dfm.maxCurvedEdgesPerPanel) || 2,
       panels,
@@ -506,8 +536,8 @@
       const panelB = panels[joint.b[0]];
       const edgeA = joint.a[1];
       const edgeB = joint.b[1];
-      const ownsA = panelA.ownedEdges.indexOf(edgeA) !== -1;
-      const ownsB = panelB.ownedEdges.indexOf(edgeB) !== -1;
+      const ownsA = panelA.jointOwnedEdges.indexOf(edgeA) !== -1;
+      const ownsB = panelB.jointOwnedEdges.indexOf(edgeB) !== -1;
       const validOwnership = ownsA !== ownsB;
       const ownerInset = ownsA ? panelA.insets[edgeA] : panelB.insets[edgeB];
       const matingInset = ownsA ? panelB.insets[edgeB] : panelA.insets[edgeA];
@@ -608,7 +638,7 @@
         const faceUv = panelFaceUv(panel, u, v);
         const point = pointOnFace(panel.face, faceUv.u, faceUv.v, dims, project);
         const wave = computeWaveDisplacement(point, project);
-        const drop = dfmEdgeDrop(u, v, panel.width, panel.height, panel.ownedEdges, edgeRadius, edgeDrop);
+        const drop = dfmEdgeDrop(u, v, panel.width, panel.height, panel.ownedEdges, panel.edgeRadius, edgeDrop);
         const topZ = Math.max(0.001, thickness + wave.displacement - drop);
         const topPoint = { x: origin.x + local.x, y: origin.y + local.y, z: topZ };
         const bottomPoint = { x: origin.x + local.x, y: origin.y + local.y, z: 0 };
@@ -654,9 +684,13 @@
       faceHeight: panel.faceHeight,
       insets: Object.assign({}, panel.insets),
       assemblyOffset: Object.assign({}, panel.assemblyOffset),
-      jointStrategy: "flushButt",
+      jointStrategy: "flatCapButt",
+      isWavePanel: panel.isWavePanel,
+      surfaceType: panel.surfaceType,
+      jointOwnedEdges: panel.jointOwnedEdges.slice(),
+      jointMatingEdges: panel.jointMatingEdges.slice(),
       thickness,
-      edgeRadius,
+      edgeRadius: panel.edgeRadius,
       ownedEdges: panel.ownedEdges.slice(),
       flatEdges: panel.flatEdges.slice(),
       ownedEdgeLabels: panel.ownedEdgeLabels.slice(),
@@ -713,12 +747,29 @@
     const distance = Math.min.apply(null, distances);
     if (distance >= edgeRadius) return 0;
     const t = 1 - distance / edgeRadius;
-    return edgeDrop * smootherstep(0, 1, t);
+    let drop = edgeDrop * smootherstep(0, 1, t);
+    const ownsVerticalEdge = ownedEdges.indexOf("left") !== -1 || ownedEdges.indexOf("right") !== -1;
+    if (ownsVerticalEdge) {
+      const capDistance = Math.min(v * height, (1 - v) * height);
+      const capFadeDistance = Math.min(height * 0.5, Math.max(edgeRadius, 0.0001));
+      drop *= smootherstep(0, capFadeDistance, capDistance);
+    }
+    return drop;
   }
 
-  function ownedEdgesForPanel(project, face) {
-    const custom = project.panelization && project.panelization.dfm && project.panelization.dfm.edgeOwners;
-    const edges = custom && Array.isArray(custom[face]) ? custom[face] : DFM_DEFAULT_EDGE_OWNERS[face];
+  function jointOwnedEdgesForPanel(project, face) {
+    const custom = project.panelization && project.panelization.dfm && project.panelization.dfm.jointEdgeOwners;
+    const edges = custom && Array.isArray(custom[face]) ? custom[face] : DFM_DEFAULT_JOINT_OWNERS[face];
+    return sanitizePanelEdges(edges);
+  }
+
+  function routedEdgesForPanel(project, face) {
+    const custom = project.panelization && project.panelization.dfm && project.panelization.dfm.routedEdges;
+    const edges = custom && Array.isArray(custom[face]) ? custom[face] : DFM_DEFAULT_ROUTED_EDGES[face];
+    return sanitizePanelEdges(edges);
+  }
+
+  function sanitizePanelEdges(edges) {
     return (edges || []).filter((edge, index, array) => LOCAL_PANEL_EDGES.indexOf(edge) !== -1 && array.indexOf(edge) === index);
   }
 

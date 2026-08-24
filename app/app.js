@@ -615,10 +615,15 @@
       panelProperty("Machined height", fmtDimension(panel.height)),
       panelProperty("Thickness", fmtDimension(project.cabinet.dimensions.wallThickness)),
       panelProperty("Route radius", fmtDimension(panel.edgeRadius)),
+      panelProperty("Surface", panel.face === "top" ? "Inset wave relief" : (panel.isWavePanel ? "Wave relief" : "Planar cap")),
       "</div>",
-      '<div class="panel-joint-note"><strong>Flush butt joints</strong><span>Square edges are shortened by one wall thickness to meet the neighboring panel without overlap.</span></div>',
+      '<div class="panel-joint-note"><strong>Flat cap butt joints</strong><span>' + (panel.face === "top"
+        ? "This full-size cap owns all four perimeter joints. Its square trim stays flat around the inset wave field."
+        : (panel.isWavePanel
+          ? "Wall height stops at the inner faces of the top and bottom caps."
+          : "This full-size bottom cap owns all four perimeter joints and remains completely planar.")) + '</span></div>',
       '<div class="panel-edge-groups">',
-      '<div><strong>Routed / radiused</strong><span>' + escapeHtml(panel.ownedEdgeLabels.join(", ")) + '</span></div>',
+      '<div><strong>Routed / radiused</strong><span>' + escapeHtml(panel.ownedEdgeLabels.join(", ") || "None") + '</span></div>',
       '<div><strong>Square mating edges</strong><span>' + escapeHtml(panel.flatEdgeLabels.join(", ")) + '</span></div>',
       "</div>"
     ].join("");
@@ -1812,7 +1817,7 @@
     if (factor === 1) return;
 
     multiplyFields(target.cabinet.dimensions, ["width", "height", "depth", "wallThickness"], factor);
-    multiplyFields(target.waves, ["reliefDepth", "reliefBias", "minThickness"], factor);
+    multiplyFields(target.waves, ["reliefDepth", "reliefBias", "minThickness", "topFlatBorder", "topWaveBlend"], factor);
     convertSourceList(target.drivers, factor);
     convertSourceList(target.manualSources, factor);
 

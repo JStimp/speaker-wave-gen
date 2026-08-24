@@ -93,7 +93,7 @@
     const faceIds = [];
 
     patches.forEach((patch) => {
-      faceIds.push(addSplineFace(add, edgeMap, patch));
+      faceIds.push(addSurfaceFace(add, edgeMap, patch));
     });
 
     const shell = add("CLOSED_SHELL('',(" + faceIds.join(",") + "))");
@@ -324,7 +324,7 @@
     const lastRow = top.length - 1;
     const lastColumn = top[0].length - 1;
     return [
-      makeSurfacePatch(sampleGridAsColumns(top, controlLimit)),
+      makeSurfacePatch(sampleGridAsColumns(top, controlLimit), { surfaceType: panel.isWavePanel === false ? "plane" : "spline" }),
       makeSurfacePatch(sampleGridAsColumns(bottom, controlLimit, { reverseRows: true }), { surfaceType: "plane" }),
       makeSurfacePatch(edgeSurfaceColumns(top[0], bottom[0], controlLimit), { surfaceType: "plane" }),
       makeSurfacePatch(edgeSurfaceColumns(
@@ -536,6 +536,7 @@
 
       return {
         face,
+        surfaceType: face === "bottom" ? "plane" : "spline",
         points,
         bottom: points.map((column) => column[0]),
         right: points[points.length - 1].slice(),

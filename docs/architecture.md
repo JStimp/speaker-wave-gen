@@ -31,27 +31,27 @@ The prototype supports a rectangular enclosure. Coordinates follow a CAD-style f
 - Y is cabinet depth, centered on the origin.
 - Z is cabinet height, with the bottom surface on `Z=0`.
 
-The wave field is evaluated on the full cuboid shell before any panel thinking, so shared edges use the same relief height.
+The wave field is evaluated around the four vertical walls before panel splitting, so front/right/back/left edges share the same relief. The same source-distance field continues onto the top, where a nearest-edge mask holds a uniform perimeter flat and smoothly fades relief into the center. The bottom is excluded from the wave field and remains planar.
 
-DFM panel export derives six flat-workholding panel solids from that same field. The fixed split gives each panel no more than two routed/radiused edges and keeps the remaining edges square for mating. Every cabinet edge has exactly one owner: the routed owner keeps the full outside extent, while the non-owner is shortened by one wall thickness so its square end meets the owner's inner face without occupying the same corner volume.
+DFM panel export derives six flat-workholding panel solids. Top and bottom are full `width x depth` cap panels. Front and back retain the full cabinet width but are shortened by two material thicknesses in height. Left and right are shortened by two thicknesses in both depth and height, fitting between the caps and the front/back corner owners without occupying the same volume.
 
 Shortened panels retain their original assembled-face UV range. The wave field is cropped at the joint instead of being rescaled across the smaller blank, preserving alignment with the shared cabinet design.
 
 The viewer can transform those same panel meshes back into cabinet coordinates for a transparent ownership overlay or move them outward along their face normals for an exploded assembly view. Panel meshes carry face IDs for viewport picking and the focused DFM properties overlay.
 
-Each separately exported panel STEP contains one sculpted spline top and five analytic planar faces. Export selection is stored in the project schema so chosen manufacturing parts survive save/load.
+Each wall-panel STEP contains one sculpted spline top and five analytic planar faces. The top cap uses one spline face with a geometrically flat perimeter plus five analytic faces; the bottom cap uses six analytic planar faces. Export selection is stored in the project schema so chosen manufacturing parts survive save/load.
 
-Front-mounted sources use a cuboid-unfolding distance model on sharp cabinets. When corner wrap is enabled, the wave field switches to the rounded 3D surface positions at wrapped edges so adjacent faces keep matched relief.
+Front-mounted sources use a cuboid-unfolding distance model across the four walls. When vertical corner blend is enabled, the wave field switches to rounded 3D wall positions at those edges so adjacent wall faces keep matched relief.
 
-Corner wrap is not a simple hard fillet. It progressively softens the vertical, upper, and lower perimeter edges. In flat-bottom mode, the central underside stays planar on `Z=0` while the perimeter rounds inward and upward away from the contact patch.
+Vertical corner blend is not a simple hard fillet. It progressively softens only the four upright wall corners and fades to zero before the top and bottom cap seams. The cap outlines therefore remain rectangular and easy to fixture.
 
 Relief depth is clipped by the requested relief depth and by the cabinet wall thickness minus the configured minimum remaining wall. This keeps aggressive settings from previewing an impossible carve depth.
 
-When flat bottom is enabled, the bottom face receives zero wave displacement and the lower perimeter is guarded against outward flaring. Positive outward relief near the floor transitions inward, while the actual contact surface stays closed and planar on `Z=0`.
+Wall relief fades to zero at the cap inner-face elevations, producing straight exterior seam lines without a wavy overhang or corner flange. The top perimeter also remains at zero displacement; only the inset center receives relief. The bottom always receives zero displacement.
 
 ## Units
 
-Projects default to inches. Switching between inches and millimeters converts cabinet dimensions, driver/source lengths, wave lengths, relief depths, and falloff values so the design keeps the same physical size.
+Projects default to inches. Switching between inches and millimeters converts cabinet dimensions, driver/source lengths, wave lengths, relief depths, top border/blend widths, and falloff values so the design keeps the same physical size.
 
 ## Preview Aids
 

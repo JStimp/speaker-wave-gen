@@ -22,12 +22,12 @@ You can also open `app/index.html` directly in a browser.
 
 - Rectangular speaker cabinet preview.
 - CAD-style coordinates: X width, Y depth, Z height, with the origin at the floor center and the bottom on `Z=0`.
-- Continuous wave relief across the active waved faces, with an optional flat bottom that keeps the contact surface on `Z=0` while the lower perimeter rounds inward and upward.
-- Corner wrap control for smoother wave continuity around softened cabinet edges.
+- Continuous wave relief around the four vertical cabinet walls and inside an adjustable flat perimeter on the top; the bottom remains planar.
+- Vertical corner blend control for wall-to-wall continuity. The blend fades out before the flat cap seams.
 - Unit selection for inches or millimeters.
 - Driver/source add/remove controls with selectable source chips, duplicate/copy/paste settings, a sidebar editor, and a floating click-to-edit overlay.
 - Advanced source controls for position, diameter, amplitude, wavelength, phase, and falloff.
-- Relief depth, flat-bottom, bias, normalization, preview resolution, export quality, and overlay controls.
+- Relief depth, bias, normalization, preview resolution, export quality, and overlay controls.
 - Visual helpers for a floor origin marker, offset XYZ direction triad, outline box, floor grid, slim dimension guides, and min/max relief analysis planes.
 - Three CAD viewing modes: assembled model, transparent panel-split ghosts, and a selectable exploded six-panel view.
 - Clickable exploded panels with a compact properties window for blank size, thickness, routed edges, square mating edges, and export inclusion.
@@ -39,8 +39,8 @@ You can also open `app/index.html` directly in a browser.
 - Orbit/pan/zoom 3D viewport using vendored Three.js files.
 - Browser downloads for `.wavecad.json`, `.obj`, `.stl`, Smooth surface STEP, and preview `.png`.
 - Selectable DFM exports that create separately named STEP/OBJ/STL files for the chosen panels. Chromium browsers can write them into an automatically named project folder.
-- Flush DFM butt joints: each cabinet edge has one full-extent routed owner, while the square mating panel is shortened by exactly one wall thickness to prevent corner-volume interference.
-- DFM STEP uses analytic planar faces for the flat underside and panel boundaries, with a spline surface only for the sculpted wave face.
+- Flat-cap DFM butt joints: top and bottom remain full width/depth, while all four walls are shortened by two material thicknesses to fit between them. Front/back own the remaining vertical corners so side panels do not overlap.
+- DFM wall and inset-top STEP files use one spline relief face and five analytic planar faces. The bottom panel uses six analytic planar faces.
 - OBJ/STL/browser STEP exports use a separate output quality setting, so they can be higher resolution or smoother than the live preview.
 - Higher default preview/detail settings for inspecting wave relief without immediately changing controls.
 - Default STEP export uses Smooth surface STEP. Faceted solid STEP remains available as a fallback when troubleshooting CAD imports.
@@ -72,7 +72,7 @@ Open:
 app/smoke-test.html
 ```
 
-It checks that the default project loads, mesh vertices are finite, rounded front/right seam heights match, flat-bottom floor relief behaves correctly, all twelve DFM joints have one owner with zero modeled overlap, panel bottoms stay flat, individual panel STEP files contain one solid, planar boundaries use STEP planes, and OBJ/STL/STEP exporters produce text.
+It checks that the default project loads, mesh vertices are finite, front/right wall relief matches, the top border and both cap seams stay flat, exactly five panels receive waves, the bottom remains planar, all twelve DFM joints have one owner with zero modeled overlap, individual panel STEP files contain one solid, and OBJ/STL/STEP exporters produce text.
 
 ## STEP Direction
 

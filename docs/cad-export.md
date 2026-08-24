@@ -14,7 +14,7 @@ The static app exports:
 
 OBJ and STL are mesh exports for inspection and rough CAM experiments. They are not editable CAD surfaces. Mesh coordinates use the selected project units.
 
-OBJ, STL, and STEP exports rebuild from the selected export quality rather than the live preview resolution. The exported geometry follows settings such as corner wrap and flat-bottom mode. In flat-bottom mode, the underside contact patch stays on `Z=0` and the lower perimeter rounds inward and upward so the exported body closes without an outward base flange.
+OBJ, STL, and STEP exports rebuild from the selected export quality rather than the live preview resolution. Relief is generated on the four walls and inside the top panel's adjustable flat border. The bottom remains planar, and wall relief fades to zero at both cap seams.
 
 ## STEP
 
@@ -27,12 +27,12 @@ For the separate CAD-kernel path, save the project JSON and drag the `.wavecad.j
 
 ## Panel Strategy
 
-The surface is generated as a full cuboid shell first. DFM panel export then derives six flat-workholding panel bodies from the same wave field.
+The shared relief field generates four waved wall bodies, one inset-wave top body, and one planar bottom body.
 
-The fixed split gives each panel no more than two routed curved edges. The other two local edges stay square for mating and workholding. Routed edge owners keep the full cabinet-face extent; each neighboring square edge is inset by exactly one wall thickness. The resulting flush butt-joint envelopes meet at the owner's inner plane rather than overlapping through the corner. The wave sample coordinates remain tied to the assembled cabinet, so shortening a blank crops the relief instead of stretching it.
+Top and bottom keep the full cabinet width and depth and own all eight cap-to-wall joints. Every wall is shortened by one cap thickness at each end. Front and back own the four vertical wall corners; left and right are shortened by one thickness at their front and back edges. The resulting butt-joint envelopes meet at the owner's inner plane rather than overlapping. Wave sample coordinates remain tied to the assembled cabinet, so shortening a blank crops the relief instead of stretching it.
 
 The Output section lets the user select any combination of panels and creates a separate labeled file for each selection. On browsers with directory access, WaveGen3D creates a `<project>-dfm-panels` folder inside the chosen location; otherwise it falls back to individual browser downloads.
 
-Each DFM STEP file contains one named `MANIFOLD_SOLID_BREP`. Its sculpted top is a spline surface, while its flat underside and four boundary faces are explicit STEP `PLANE` surfaces so SolidWorks can recognize the machinable flats directly.
+Each DFM STEP file contains one named `MANIFOLD_SOLID_BREP`. A wall panel has one spline relief face plus five explicit STEP `PLANE` surfaces. The top also has one spline face, whose border control points remain flat, plus five planes. The bottom has six `PLANE` surfaces. The single top spline favors watertight solid import over separately recognized planar trim faces.
 
 This DFM path uses zero-clearance flush butt joints. It intentionally does not add rabbets, screw holes, driver cutouts, glue gaps, machining tolerances, or internal clearances yet.

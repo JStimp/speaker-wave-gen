@@ -7,9 +7,9 @@
 - Rebuilt the active prototype as a dependency-free static browser app.
 - Removed Node/npm/Vite/Rollup/Electron from the normal launch path.
 - Added vendored Three.js browser files and a local-file launcher.
-- Added continuous six-face cuboid wave relief with seam-matched front/side/top/bottom distance math.
+- Added continuous four-wall wave relief with seam-matched front/side/back distance math.
 - Added side-panel controls for cabinet dimensions, wall limits, drivers, point sources, relief settings, preview resolution, and overlays.
-- Added flat-bottom geometry mode with a planar underside contact patch and a lower perimeter that rounds inward and upward instead of flaring outward.
+- Replaced the mixed flat-bottom treatment with fixed, fully planar top and bottom cap panels for simpler CNC workholding and assembly.
 - Added preview helpers for XYZ origin, outline box, floor grid, front-facing reset view, dimension guides, and relief analysis planes.
 - Refined CAD preview labels with a separate floor origin marker, offset XYZ direction triad, slim dimension text, and viewport-clamped hover-only tooltips for control text.
 - Changed coordinates to X width, Y depth, Z height with the origin at floor center and bottom on `Z=0`.
@@ -19,12 +19,14 @@
 - Added independent export quality so outputs can be denser than preview.
 - Raised preview/detail presets and updated the starter cabinet/source settings for a stronger default wave pattern.
 - Set Smooth surface STEP as the default browser STEP export and kept faceted solid STEP as a fallback.
-- Added corner wrap geometry for smoother wave continuity around softened cabinet edges.
+- Limited corner blending to the four vertical wall corners and faded it out before the planar cap seams.
 - Added JSON, OBJ, STL, Smooth surface STEP, faceted fallback STEP, and PNG browser exports.
 - Added a Docker-only CadQuery/OCP solid STEP exporter with a drag/drop Windows launcher for SolidWorks outer-block solids.
 - Kept the Docker solid exporter compatible with normal saved `.wavecad.json` projects without a redundant browser output button.
 - Added DFM panel exports for six flat-workholding panel solids, including Smooth STEP plus OBJ/STL debug downloads.
-- Removed DFM corner interference with flush butt-joint sizing: routed edge owners keep the full extent while square mating panels are shortened by one wall thickness.
+- Removed DFM interference with flat-cap butt-joint sizing: full-size top/bottom caps own their perimeter joints, and all four walls fit between the cap inner faces.
+- Restored top-panel relief inside an adjustable flat perimeter with a separate smooth blend width; the bottom remains completely planar.
+- Changed top STEP output to one spline relief face with a mathematically flat border while retaining five analytic boundary/underside planes.
 - Added twelve-joint ownership, overlap, and mating-plane geometry checks.
 - Added assembled, transparent panel-split, and exploded panel preview modes with clickable panel property overlays.
 - Added per-panel export selection and separate labeled STEP/OBJ/STL files written into a project output folder when the browser supports directory access.

@@ -23,7 +23,7 @@ DEFAULT_PROJECT = {
     "project": {"name": "Wave wrapped hardwood speaker", "notes": "Static browser prototype."},
     "cabinet": {
         "preset": "rectangular",
-        "cornerWrap": 0.28,
+        "cornerWrap": 0.22,
         "dimensions": {"width": 18, "height": 32, "depth": 14, "wallThickness": 0.875},
     },
     "drivers": [
@@ -50,7 +50,9 @@ DEFAULT_PROJECT = {
         "normalization": "softClip",
         "reliefDepth": 0.34,
         "reliefBias": 0,
-        "flatBottom": True,
+        "surfaceMode": "fourWallsInsetTop",
+        "topFlatBorder": 1.5,
+        "topWaveBlend": 0.75,
         "minThickness": 0.5,
     },
     "preview": {"resolution": "ultra"},
@@ -74,6 +76,8 @@ def load_project(path):
 
 def normalize_project(project):
     result = merge_deep(copy.deepcopy(DEFAULT_PROJECT), project or {})
+    if result["waves"].get("surfaceMode") == "fourWallFlatCaps":
+        result["waves"]["surfaceMode"] = "fourWallsInsetTop"
     result["drivers"] = result["drivers"] if isinstance(result.get("drivers"), list) else []
     result["manualSources"] = result["manualSources"] if isinstance(result.get("manualSources"), list) else []
     dims = dimensions(result)
@@ -139,31 +143,36 @@ def point_on_face(face, u, v, dims, project):
 
 
 def apply_corner_wrap(point, dims, project):
+    if point.face in ("top", "bottom"):
+        return point
+
     wrap = clamp01(float(project.get("cabinet", {}).get("cornerWrap") or 0))
-    radius = max(0, min(dims["width"], dims["depth"], dims["height"]) * 0.22) * wrap
+    requested_radius = max(0, min(dims["width"], dims["depth"], dims["height"]) * 0.22) * wrap
+    cap_thickness = max(0.001, dims["wallThickness"])
+    cap_blend_distance = max(requested_radius, cap_thickness)
+    cap_blend = smoothstep(cap_thickness, cap_thickness + cap_blend_distance, point.position["z"]) * smoothstep(
+        cap_thickness, cap_thickness + cap_blend_distance, dims["height"] - point.position["z"]
+    )
+    radius = requested_radius * cap_blend
     if radius <= 0.000001:
         return point
 
     p = point.position
     hx = dims["width"] / 2
     hy = dims["depth"] / 2
-    h = dims["height"]
     qx = clamp(p["x"], -hx + radius, hx - radius)
     qy = clamp(p["y"], -hy + radius, hy - radius)
-    qz = clamp(p["z"], radius, h - radius)
     vx = p["x"] - qx
     vy = p["y"] - qy
-    vz = p["z"] - qz
-    length = math.sqrt(vx * vx + vy * vy + vz * vz)
+    length = math.sqrt(vx * vx + vy * vy)
     if length <= 0.000001:
         return point
 
     effective_radius = min(length, radius)
     nx = vx / length
     ny = vy / length
-    nz = vz / length
-    point.position = {"x": qx + nx * effective_radius, "y": qy + ny * effective_radius, "z": qz + nz * effective_radius}
-    point.normal = {"x": nx, "y": ny, "z": nz}
+    point.position = {"x": qx + nx * effective_radius, "y": qy + ny * effective_radius, "z": p["z"]}
+    point.normal = {"x": nx, "y": ny, "z": 0}
     point.corner_wrapped = True
     return point
 
@@ -256,7 +265,7 @@ def front_source_cuboid_distance(point, source, dims):
 def compute_wave_displacement(point, project):
     dims = dimensions(project)
     waves = project["waves"]
-    if point.face == "bottom" and waves.get("flatBottom"):
+    if point.face == "bottom":
         return {"raw": 0, "displacement": 0}
 
     raw = 0
@@ -275,21 +284,35 @@ def compute_wave_displacement(point, project):
     elif waves.get("normalization") == "clamp":
         displacement = clamp(displacement, -limit, limit)
 
-    if waves.get("flatBottom"):
-        displacement = apply_flat_bottom_transition(point, dims, displacement, limit)
+    if point.face == "top":
+        displacement = apply_top_wave_mask(point, dims, waves, displacement)
+    else:
+        displacement = apply_flat_cap_transition(point, dims, displacement, limit)
     return {"raw": raw, "displacement": displacement}
 
 
-def apply_flat_bottom_transition(point, dims, displacement, limit):
-    fade_height = min(dims["height"] * 0.12, max(limit * 2.5, dims["wallThickness"] * 0.5 or limit))
-    floor_blend = smoothstep(0, fade_height, point.position["z"])
-    if point.face in ("bottom", "top"):
-        return displacement * floor_blend
-    if displacement <= 0:
-        return displacement * floor_blend
-    lift_blend = smoothstep(0, max(fade_height * 0.35, 0.0001), point.position["z"])
-    inward_curl = math.sin(math.pi * floor_blend) * lift_blend
-    return displacement * floor_blend * floor_blend - abs(displacement) * inward_curl * 0.55
+def apply_flat_cap_transition(point, dims, displacement, limit):
+    cap_thickness = max(0.001, dims["wallThickness"])
+    fade_height = min(dims["height"] * 0.18, max(cap_thickness * 1.5, limit * 2.5))
+    bottom_blend = smoothstep(cap_thickness, cap_thickness + fade_height, point.position["z"])
+    top_blend = smoothstep(cap_thickness, cap_thickness + fade_height, dims["height"] - point.position["z"])
+    return displacement * bottom_blend * top_blend
+
+
+def apply_top_wave_mask(point, dims, waves, displacement):
+    half_minimum_span = max(0, min(dims["width"], dims["depth"]) / 2)
+    border = clamp(float(waves.get("topFlatBorder") or 0), 0, half_minimum_span)
+    remaining_span = max(0, half_minimum_span - border)
+    blend = clamp(float(waves.get("topWaveBlend") or 0), 0, remaining_span)
+    u = clamp01(point.u)
+    v = clamp01(point.v)
+    edge_distance = min(u * dims["width"], (1 - u) * dims["width"], v * dims["depth"], (1 - v) * dims["depth"])
+
+    if remaining_span <= 0.000001:
+        return 0
+    if blend <= 0.000001:
+        return displacement if edge_distance > border else 0
+    return displacement * smootherstep(border, border + blend, edge_distance)
 
 
 def generate_surface_grids(project, resolution=None, control_limit=None):
@@ -413,6 +436,13 @@ def smoothstep(edge0, edge1, value):
         return 1 if value >= edge1 else 0
     t = clamp01((value - edge0) / (edge1 - edge0))
     return t * t * (3 - 2 * t)
+
+
+def smootherstep(edge0, edge1, value):
+    if edge0 == edge1:
+        return 1 if value >= edge1 else 0
+    t = clamp01((value - edge0) / (edge1 - edge0))
+    return t * t * t * (t * (t * 6 - 15) + 10)
 
 
 def is_finite(value):
